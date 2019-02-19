@@ -142,9 +142,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="ClassFile.h" />
     <ClInclude Include="ClassReader.h" />
     <ClInclude Include="DataBlock.h" />
@@ -166,6 +163,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\README.md" />
     <None Include="java\test\Test.class" />
     <None Include="java\test\Test.java" />
   </ItemGroup>
