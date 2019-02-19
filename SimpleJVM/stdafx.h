@@ -11,5 +11,9 @@
 #include <tchar.h>
 
 
+#include <vector>
+#include <string>
+#include <map>
+#include <memory>
 
-// TODO:  在此处引用程序需要的其他头文件
+#include "types.h"

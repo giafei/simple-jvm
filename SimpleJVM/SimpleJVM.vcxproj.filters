@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="java">
+      <UniqueIdentifier>{e1a61ae4-3e1a-4dbe-ac2a-e57fe9319e99}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="java\test">
+      <UniqueIdentifier>{ffcc4dd2-f833-4f47-87ef-781089506d42}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -24,6 +30,21 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="types.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ClassFile.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DataReader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DataBlock.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ClassReader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -32,5 +53,22 @@
     <ClCompile Include="SimpleJVM.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="ClassFile.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DataReader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ClassReader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="java\test\Test.class">
+      <Filter>java\test</Filter>
+    </None>
+    <None Include="java\test\Test.java">
+      <Filter>java\test</Filter>
+    </None>
   </ItemGroup>
 </Project>
