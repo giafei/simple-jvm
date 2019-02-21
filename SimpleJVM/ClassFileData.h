@@ -5,7 +5,6 @@
 class DataReader;
 namespace ClassFile
 {
-	class ClassFile;
 	enum ConstantType
 	{
 		CONSTANT_Empty = 0,
@@ -40,10 +39,6 @@ namespace ClassFile
 		{
 			return this->type;
 		}
-
-	protected:
-		friend class ClassFile;
-		virtual void onPostPoolReady(const ClassFile *pClassFile) {}
 
 	protected:
 		ConstantType type;
@@ -134,7 +129,7 @@ namespace ClassFile
 		std::shared_ptr<const std::string> data;
 	};
 
-	class ConstantString : public ConstantUTF8String
+	class ConstantString : public Constant
 	{
 	public:
 		void setValueIndex(int i)
@@ -142,14 +137,16 @@ namespace ClassFile
 			valueIndex = i;
 		}
 
-	protected:
-		virtual void onPostPoolReady(const ClassFile *pClassFile);
+		int getValueIndex() const
+		{
+			return valueIndex;
+		}
 
 	protected:
 		int valueIndex;
 	};
 
-	class ConstantClassInfo : public ConstantUTF8String
+	class ConstantClassInfo : public Constant
 	{
 	public:
 		void setNameIndex(int i)
@@ -157,8 +154,10 @@ namespace ClassFile
 			nameIndex = i;
 		}
 
-	protected:
-		virtual void onPostPoolReady(const ClassFile *pClassFile);
+		int getNameIndex() const
+		{
+			return nameIndex;
+		}
 
 	protected:
 		int nameIndex;
@@ -167,19 +166,14 @@ namespace ClassFile
 	class ConstantNameAndType : public Constant
 	{
 	public:
-		std::shared_ptr<const std::string> getName() const
-		{
-			return name;
-		}
-
-		std::shared_ptr<const std::string> getDescriptor() const
-		{
-			return descriptor;
-		}
-
 		void setNameIndex(int i)
 		{
 			this->nameIndex = i;
+		}
+
+		int getNameIndex() const
+		{
+			return nameIndex;
 		}
 
 		void setDescriptorIndex(int i)
@@ -187,13 +181,12 @@ namespace ClassFile
 			this->descriptorIndex = i;
 		}
 
-	protected:
-		virtual void onPostPoolReady(const ClassFile *pClassFile);
+		int getDescriptorIndex() const
+		{
+			return descriptorIndex;
+		}
 
 	protected:
-		std::shared_ptr<const std::string> name;
-		std::shared_ptr<const std::string> descriptor;
-
 		int nameIndex = 0;
 		int descriptorIndex = 0;
 	};
@@ -201,19 +194,14 @@ namespace ClassFile
 	class ConstantMemberRef : public Constant
 	{
 	public:
-		std::shared_ptr<const ConstantClassInfo> getClassData() const
-		{
-			return classData;
-		}
-
-		std::shared_ptr<const ConstantNameAndType> getNameAndType() const
-		{
-			return nameAndType;
-		}
-
 		void setClassIndex(int i)
 		{
 			this->classIndex = i;
+		}
+
+		int getClassIndex() const
+		{
+			return classIndex;
 		}
 
 		void setNameAndTypeIndex(int i)
@@ -221,13 +209,12 @@ namespace ClassFile
 			this->nameAndTypeIndex = i;
 		}
 
-	protected:
-		virtual void onPostPoolReady(const ClassFile *pClassFile);
+		int getNameAndTypeIndex() const
+		{
+			return nameAndTypeIndex;
+		}
 
 	protected:
-		std::shared_ptr<const ConstantClassInfo> classData;
-		std::shared_ptr<const ConstantNameAndType> nameAndType;
-
 		int classIndex = 0;
 		int nameAndTypeIndex = 0;
 	};
@@ -240,9 +227,19 @@ namespace ClassFile
 			refrenceKind = kind;
 		}
 
+		int getRefrenceKind() const
+		{
+			return refrenceKind;
+		}
+
 		void setRefrenceIndex(int i)
 		{
 			refrenceIndex = i;
+		}
+
+		int getRefrenceIndex() const
+		{
+			return refrenceIndex;
 		}
 
 	protected:
@@ -253,35 +250,31 @@ namespace ClassFile
 	class ConstantMethodTypeInfo : public Constant
 	{
 	public:
-		std::shared_ptr<const std::string> getDescriptor() const
-		{
-			return descriptor;
-		}
-
 		void setDescriptorIndex(int i)
 		{
 			this->descriptorIndex = i;
 		}
 
-	protected:
-		virtual void onPostPoolReady(const ClassFile *pClassFile);
+		int getDescriptorIndex() const
+		{
+			return descriptorIndex;
+		}
 
 	protected:
 		int descriptorIndex = 0;
-		std::shared_ptr<const std::string> descriptor;
 	};
 
 	class ConstantInvokeDynamicInfo : public Constant
 	{
 	public:
-		std::shared_ptr<const ConstantNameAndType> getNameAndType() const
-		{
-			return nameAndType;
-		}
-
 		void setMethodAttrIndex(int i)
 		{
 			methodAttrIndex = i;
+		}
+
+		int getMethodAttrIndex() const
+		{
+			return methodAttrIndex;
 		}
 
 		void setNameAndTypeIndex(int i)
@@ -289,11 +282,12 @@ namespace ClassFile
 			nameAndTypeIndex = i;
 		}
 
-	protected:
-		virtual void onPostPoolReady(const ClassFile *pClassFile);
+		int getNameAndTypeIndex() const
+		{
+			return nameAndTypeIndex;
+		}
 
 	protected:
-		std::shared_ptr<const ConstantNameAndType> nameAndType;
 		int methodAttrIndex = 0;
 		int nameAndTypeIndex = 0;
 	};
@@ -446,22 +440,6 @@ namespace ClassFile
 		std::shared_ptr<const DataBlock> data;
 	};
 
-	namespace FieldAccess
-	{
-		enum FieldAccess
-		{
-			ACC_PUBLIC = 0x0001,
-			ACC_PRIVATE = 0x0002,
-			ACC_PROTECTED = 0x0004,
-			ACC_STATIC = 0x0008,
-			ACC_FINAL = 0x0010,
-			ACC_VOLATILE = 0x0040,
-			ACC_TRANSIENT = 0x0080,
-			ACC_SYNTHETIC = 0x1000,
-			ACC_ENUM = 0x4000
-		};
-	}
-
 	class Field
 	{
 	public:
@@ -476,9 +454,8 @@ namespace ClassFile
 		}
 
 		/*
-		    1）类型描述符。
-			①基本类型byte、short、char、int、long、float和double的描述符
-			是单个字母，分别对应B、S、C、I、J、F和D。注意，long的描述符是J而不是L。
+		  1）类型描述符。
+			①基本类型byte、short、char、int、long、float和double的描述符，是单个字母，分别对应B、S、C、I、J、F和D。注意，long的描述符是J而不是L。
 			②引用类型的描述符是L＋类的完全限定名＋分号。
 			③数组类型的描述符是[＋数组元素类型描述符。
 		*/
@@ -518,26 +495,6 @@ namespace ClassFile
 		std::shared_ptr<const std::string> descriptor;
 		std::map<const std::string, std::shared_ptr<const Attribute>> attributes;
 	};
-
-
-	namespace MethodAccess
-	{
-		enum MethodAccess
-		{
-			ACC_PUBLIC = 0x0001,
-			ACC_PRIVATE = 0x0002,
-			ACC_PROTECTED = 0x0004,
-			ACC_STATIC = 0x0008,
-			ACC_FINAL = 0x0010,
-			ACC_SYNCHRONIZED = 0x0020,
-			ACC_BRIDGE = 0x0040,
-			ACC_VARARGS = 0x0080,
-			ACC_NATIVE = 0x0100,
-			ACC_ABSTRACT = 0x0400,
-			ACC_STRICTFP = 0x0800,
-			ACC_SYNTHETIC = 0x1000
-		};
-	}
 
 	class Method
 	{
@@ -593,27 +550,53 @@ namespace ClassFile
 		std::map<const std::string, std::shared_ptr<const Attribute>> attributes;
 	};
 
-	namespace ClassFileAccess
-	{
 
-		enum ClassFileAccess
-		{
-			ACC_PUBLIC = 0x0001,
-			ACC_FINAL = 0x0010,
-			ACC_SUPER = 0x0020,
-			ACC_INTERFACE = 0x0200,
-			ACC_ABSTRACE = 0x0400,
-			ACC_SYNTHETIC = 0x1000,
-			ACC_ANNOTATION = 0x2000,
-			ACC_ENUM = 0x4000
-		};
-	}
-
-	class ClassFile
+	class ClassFileData
 	{
 	public:
-		ClassFile(DataReader& reader);
-		~ClassFile();
+		ClassFileData(DataReader& reader);
+		~ClassFileData();
+
+	public:
+		uint32 getAccessFlags() const
+		{
+			return accessFlags;
+		}
+
+		std::shared_ptr<const std::string> getThisClass() const
+		{
+			return thisClass;
+		}
+
+		std::shared_ptr<const std::string> getSuperClass() const
+		{
+			return superClass;
+		}
+
+		const std::vector<std::shared_ptr<const ConstantClassInfo>>& getInterfaces() const
+		{
+			return interfaces;
+		}
+
+		const std::vector<std::shared_ptr<const Field>>& getFields() const
+		{
+			return fields;
+		}
+
+		const std::vector<std::shared_ptr<const Method>>& getMethods() const
+		{
+			return methods;
+		}
+
+		const std::map<std::string, std::shared_ptr<const Attribute>>& getAttributes() const
+		{
+			return attributes;
+		}
+
+		const std::map<int, std::shared_ptr<Constant>>& getConstantPool() const
+		{
+			return constantPool;
+		}
 
 	public:
 		std::shared_ptr<const std::string> getConstantString(int i) const;
@@ -621,6 +604,9 @@ namespace ClassFile
 		template <typename T>
 		std::shared_ptr<const T> getConstant(int i) const
 		{
+			if (i == 0)
+				return std::make_shared<const T>();
+
 			std::shared_ptr<Constant> ptr = this->constantPool.at(i);
 			return std::dynamic_pointer_cast<const T>(ptr);
 		}
@@ -646,6 +632,4 @@ namespace ClassFile
 		std::map<std::string, std::shared_ptr<const Attribute>> attributes;
 	};
 }
-
-
 

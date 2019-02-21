@@ -71,12 +71,16 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>F:\WorkDir\C++\third_party\zlib;F:\WorkDir\C++\third_party\zlib\contrib\minizip;$(IncludePath)</IncludePath>
+    <LibraryPath>F:\WorkDir\C++\third_party\zlib\contrib\vstudio\vc14\x86\ZlibStatDebug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>F:\WorkDir\C++\third_party\zlib;F:\WorkDir\C++\third_party\zlib\contrib\minizip;$(IncludePath)</IncludePath>
+    <LibraryPath>F:\WorkDir\C++\third_party\zlib\contrib\vstudio\vc14\x86\ZlibStatRelease;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -86,12 +90,15 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;ZLIB_WINAPI;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -114,7 +121,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;ZLIB_WINAPI;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
@@ -122,6 +129,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -142,18 +150,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ClassFile.h" />
+    <ClInclude Include="ClassFileData.h" />
+    <ClInclude Include="ClassLoader.h" />
+    <ClInclude Include="ClassPath.h" />
     <ClInclude Include="ClassReader.h" />
     <ClInclude Include="DataBlock.h" />
     <ClInclude Include="DataReader.h" />
+    <ClInclude Include="HeapMemory.h" />
+    <ClInclude Include="jvm.h" />
+    <ClInclude Include="JVMClass.h" />
+    <ClInclude Include="JVMObject.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="types.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ClassFile.cpp" />
+    <ClCompile Include="ClassFileData.cpp" />
+    <ClCompile Include="ClassLoader.cpp" />
+    <ClCompile Include="ClassPath.cpp" />
     <ClCompile Include="ClassReader.cpp" />
     <ClCompile Include="DataReader.cpp" />
+    <ClCompile Include="HeapMemory.cpp" />
+    <ClCompile Include="JVMClass.cpp" />
+    <ClCompile Include="JVMObject.cpp" />
     <ClCompile Include="SimpleJVM.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

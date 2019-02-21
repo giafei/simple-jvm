@@ -1,14 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="源文件">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="头文件">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
     <Filter Include="资源文件">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
@@ -19,45 +11,96 @@
     <Filter Include="java\test">
       <UniqueIdentifier>{ffcc4dd2-f833-4f47-87ef-781089506d42}</UniqueIdentifier>
     </Filter>
+    <Filter Include="base">
+      <UniqueIdentifier>{8f942d5a-e585-458d-a28a-de381a065333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\h">
+      <UniqueIdentifier>{9f3d7d4d-9b69-497c-b0d9-719f54169148}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\cpp">
+      <UniqueIdentifier>{7388ee3f-a15c-4fdf-b203-79fd3fa6d5e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="application">
+      <UniqueIdentifier>{36de2a58-1ccc-433c-b51a-bb1ceb65d4ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="class_reader">
+      <UniqueIdentifier>{b9f35a89-7fa2-46fa-a06e-4248d53e7091}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jvm">
+      <UniqueIdentifier>{bda0a24e-e65f-4f55-bc9e-41a54797f684}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>头文件</Filter>
+      <Filter>base\h</Filter>
     </ClInclude>
     <ClInclude Include="types.h">
-      <Filter>头文件</Filter>
+      <Filter>base\h</Filter>
     </ClInclude>
-    <ClInclude Include="ClassFile.h">
-      <Filter>头文件</Filter>
+    <ClInclude Include="targetver.h">
+      <Filter>base\h</Filter>
     </ClInclude>
-    <ClInclude Include="DataReader.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DataBlock.h">
-      <Filter>头文件</Filter>
+    <ClInclude Include="ClassFileData.h">
+      <Filter>class_reader</Filter>
     </ClInclude>
     <ClInclude Include="ClassReader.h">
-      <Filter>头文件</Filter>
+      <Filter>class_reader</Filter>
+    </ClInclude>
+    <ClInclude Include="DataBlock.h">
+      <Filter>class_reader</Filter>
+    </ClInclude>
+    <ClInclude Include="DataReader.h">
+      <Filter>class_reader</Filter>
+    </ClInclude>
+    <ClInclude Include="ClassPath.h">
+      <Filter>jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="ClassLoader.h">
+      <Filter>jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="HeapMemory.h">
+      <Filter>jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm.h">
+      <Filter>jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="JVMClass.h">
+      <Filter>jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="JVMObject.h">
+      <Filter>jvm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
-      <Filter>源文件</Filter>
+      <Filter>base\cpp</Filter>
     </ClCompile>
     <ClCompile Include="SimpleJVM.cpp">
-      <Filter>源文件</Filter>
+      <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="ClassFile.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DataReader.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="ClassFileData.cpp">
+      <Filter>class_reader</Filter>
     </ClCompile>
     <ClCompile Include="ClassReader.cpp">
-      <Filter>源文件</Filter>
+      <Filter>class_reader</Filter>
+    </ClCompile>
+    <ClCompile Include="DataReader.cpp">
+      <Filter>class_reader</Filter>
+    </ClCompile>
+    <ClCompile Include="ClassPath.cpp">
+      <Filter>jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="ClassLoader.cpp">
+      <Filter>jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="HeapMemory.cpp">
+      <Filter>jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="JVMClass.cpp">
+      <Filter>jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="JVMObject.cpp">
+      <Filter>jvm</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

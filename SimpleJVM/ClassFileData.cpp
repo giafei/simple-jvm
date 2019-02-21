@@ -1,10 +1,10 @@
 #include "stdafx.h"
-#include "ClassFile.h"
+#include "ClassFileData.h"
 #include "DataReader.h"
 
 namespace ClassFile
 {
-	ClassFile::ClassFile(DataReader& reader)
+	ClassFileData::ClassFileData(DataReader& reader)
 	{
 		uint32 magic = reader.readUint32();
 		if (magic != 0xCAFEBABE)
@@ -24,11 +24,6 @@ namespace ClassFile
 			{
 				i++;
 			}
-		}
-
-		for (auto it = constantPool.begin(); it != constantPool.end(); it++)
-		{
-			it->second->onPostPoolReady(this);
 		}
 
 		this->accessFlags = reader.readUint16();
@@ -65,12 +60,11 @@ namespace ClassFile
 		}
 	}
 
-
-	ClassFile::~ClassFile()
+	ClassFileData::~ClassFileData()
 	{
 	}
 
-	std::shared_ptr<Constant> ClassFile::readConstant(DataReader& reader, ConstantType tag)
+	std::shared_ptr<Constant> ClassFileData::readConstant(DataReader& reader, ConstantType tag)
 	{
 		switch (tag)
 		{
@@ -215,7 +209,7 @@ namespace ClassFile
 		return std::make_shared<Constant>();
 	}
 
-	std::shared_ptr<const std::string> ClassFile::getConstantString(int i) const
+	std::shared_ptr<const std::string> ClassFileData::getConstantString(int i) const
 	{
 		auto v = this->getConstant<ConstantUTF8String>(i);
 		if (!v)
@@ -224,7 +218,7 @@ namespace ClassFile
 		return v->getData();
 	}
 
-	std::shared_ptr<const Field> ClassFile::readField(DataReader& reader)
+	std::shared_ptr<const Field> ClassFileData::readField(DataReader& reader)
 	{
 		Field *field = new Field();
 		field->setAccessFlag(reader.readUint16());
@@ -241,7 +235,7 @@ namespace ClassFile
 		return std::shared_ptr<const Field>(field);
 	}
 
-	std::shared_ptr<const Method> ClassFile::readMethod(DataReader& reader)
+	std::shared_ptr<const Method> ClassFileData::readMethod(DataReader& reader)
 	{
 		Method *method = new Method();
 		method->setAccessFlag(reader.readUint16());
@@ -258,7 +252,7 @@ namespace ClassFile
 		return std::shared_ptr<const Method>(method);
 	}
 
-	std::shared_ptr<const Attribute> ClassFile::readAttribute(DataReader& reader)
+	std::shared_ptr<const Attribute> ClassFileData::readAttribute(DataReader& reader)
 	{
 		int i = reader.readUint16();
 		auto name = getConstantString(i);
@@ -335,37 +329,5 @@ namespace ClassFile
 			p->setData(reader.readPart((int)len));
 			return std::shared_ptr<const Attribute>(p);
 		}
-	}
-
-	void ConstantString::onPostPoolReady(const ClassFile * pClassFile)
-	{
-		data = pClassFile->getConstantString(valueIndex);
-	}
-
-	void ConstantClassInfo::onPostPoolReady(const ClassFile * pClassFile)
-	{
-		data = pClassFile->getConstantString(nameIndex);
-	}
-
-	void ConstantNameAndType::onPostPoolReady(const ClassFile * pClassFile)
-	{
-		name = pClassFile->getConstantString(nameIndex);
-		descriptor = pClassFile->getConstantString(descriptorIndex);
-	}
-
-	void ConstantMemberRef::onPostPoolReady(const ClassFile * pClassFile)
-	{
-		classData = pClassFile->getConstant<ConstantClassInfo>(classIndex);
-		nameAndType = pClassFile->getConstant<ConstantNameAndType>(nameAndTypeIndex);
-	}
-
-	void ConstantMethodTypeInfo::onPostPoolReady(const ClassFile * pClassFile)
-	{
-		descriptor = pClassFile->getConstantString(descriptorIndex);
-	}
-
-	void ConstantInvokeDynamicInfo::onPostPoolReady(const ClassFile * pClassFile)
-	{
-		nameAndType = pClassFile->getConstant<ConstantNameAndType>(nameAndTypeIndex);
 	}
 }
