@@ -1,80 +1,40 @@
 #pragma once
 
-namespace ClassFile
-{
-	class Field;
-	class Method;
-	class Attribute;
-	class StringAttribute;
-	class CodeAttribute;
-	class ConstantValueAttribute;
-	class ExceptioneAttribute;
-	class UnsupportAttribute;
-	class ClassFileData;
-}
+#include "jvmBase.h"
 
 namespace jvm
 {
-	class JVMObject;
-	class JVMClass;
-	class HeapMemory;
-
-	struct SoltData
+	class JVM
 	{
-		union
-		{
-			int32 intValue;
-			uint32 uintValue;
-			float floatValue;
-			JVMObject* object;
-		} value;
+	public:
+		JVM();
+		~JVM();
 
 	public:
-		SoltData()
+		ClassLoader* getClassLoader()
 		{
-			value.intValue = 0;
+			return classLoader;
 		}
 
-	public:
-		JVMObject* getObject()
+		HeapMemory* getHeap()
 		{
-			return value.object;
+			return heap;
 		}
 
-		int32 getIntValue()
+		JVMThread* getThread()
 		{
-			return value.intValue;
-		}
-
-		uint32 getUintValue()
-		{
-			return value.uintValue;
-		}
-
-		float getFloat()
-		{
-			return value.floatValue;
+			return thread;
 		}
 
 	public:
-		void setObject(JVMObject* v)
-		{
-			value.object = v;
-		}
+		void run(int argc, char *argv[]);
 
-		void setIntValue(int32 v)
-		{
-			value.intValue = v;
-		}
-
-		void setUintValue(uint32 v)
-		{
-			value.uintValue = v;
-		}
-
-		void setFlatValue(float v)
-		{
-			value.floatValue = v;
-		}
+	protected:
+		ClassLoader *classLoader;
+		HeapMemory *heap;
+		JVMThread *thread;
 	};
 }
+
+
+

@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "JVMClass.h"
 #include "ClassFileData.h"
+#include "ClassLoader.h"
+#include "JVMObject.h"
+#include "JVMThread.h"
 
 namespace jvm
 {
@@ -10,10 +13,9 @@ namespace jvm
 		this->ownerClass = ownerClass;
 	}
 
-	std::string Field::getKey()
+	Field::Field(JVMClass * ownerClass)
 	{
-		std::string className(*(ownerClass->getName()));
-		return className + "::" + (*getName());
+		this->ownerClass = ownerClass;
 	}
 
 	Method::Method(std::shared_ptr<const ClassFile::Method> t, JVMClass * ownerClass)
@@ -22,37 +24,128 @@ namespace jvm
 		this->ownerClass = ownerClass;
 	}
 
-	JVMClass::JVMClass(const ClassFile::ClassFileData *t)
+	std::shared_ptr<const ClassFile::CodeAttribute> Method::getCode()
 	{
+		return std::dynamic_pointer_cast<const ClassFile::CodeAttribute>(attributes["Code"]);
+	}
+
+	JVMClass::JVMClass(const ClassFile::ClassFileData *t, ClassLoader* classLoader)
+	{
+		this->classLoader = classLoader;
+
 		inited = false;
 		initStarted = false;
+		classFieldsCount = 0;
 
-		name = t->getThisClass();
+		arrayEleClass = nullptr;
+
+		int nameIndex = t->getConstant<ClassFile::ConstantClassInfo>(t->getThisClass())->getNameIndex();
+		name = t->getConstantString(nameIndex);
 		accessFlags = t->getAccessFlags();
 
 		initConstantPool(t);
 
 		auto fileds = t->getFields();
-		for (auto it=fileds.begin(); it != fileds.end(); it++)
+		for (auto it = fileds.begin(); it != fileds.end(); it++)
 		{
 			auto field = *it;
 			Field *p = new Field(field, this);
 
-			this->fields[p->getKey()] = p;
+			this->fields[*(p->getName())] = p;
 		}
 
 		auto methods = t->getMethods();
-		for (auto it=methods.begin(); it != methods.end(); it++)
+		for (auto it = methods.begin(); it != methods.end(); it++)
 		{
 			auto m = *it;
 			Method *p = new Method(m, this);
 			this->methods[p->getKey()] = p;
 		}
+
+		auto super = t->getSuperClass();
+		if (super)
+		{
+			int classIndex = t->getConstant<ClassFile::ConstantClassInfo>(super)->getNameIndex();
+			superClass = classLoader->loadClass(t->getConstantString(classIndex)->c_str());
+		}
+		else
+		{
+			superClass = nullptr;
+		}
+
+		auto arr = t->getInterfaces();
+		interfaces.reserve(arr.size());
+		for (auto it = arr.begin(); it != arr.end(); it++)
+		{
+			int nameIndex = t->getConstant<ClassFile::ConstantClassInfo>(*it)->getNameIndex();
+			interfaces.push_back(classLoader->loadClass(t->getConstantString(nameIndex)->c_str()));
+		}
+	}
+
+	JVMClass::JVMClass(ClassLoader * classLoader)
+	{
+		this->classLoader = classLoader;
+		classFieldsCount = 0;
+
+		inited = false;
+		initStarted = false;
+
+		arrayEleClass = nullptr;
 	}
 
 	JVMClass::~JVMClass()
 	{
 		//TODO
+	}
+
+	JVMObject * JVMClass::getJavaClass()
+	{
+		if (javaClass == nullptr)
+		{
+			javaClass = new JVMObject(classLoader->loadClass("java/lang/Class"));
+
+			std::string className = *name;
+			char *p = (char*)className.c_str();
+
+			while (*p)
+			{
+				if (*p == '/')
+				{
+					*p = '.';
+				}
+				p++;
+			}
+
+			auto classNameStr = JVMThread::current()->allocString(className);
+			javaClass->getField("name")->setObjectValue(classNameStr);
+			//javaClass->getField("classLoader")->setSolt(0, classLoader->getJavaObject());
+		}
+
+		return javaClass;
+	}
+
+	void JVMClass::finishInit()
+	{
+		initStarted = false;
+		inited = true;
+
+		for (auto it = fields.begin(); it != fields.end(); it++)
+		{
+			if (it->second->isStatic())
+			{
+				classFieldsCount++;
+			}
+			else
+			{
+				auto descriptor = it->second->getDescriptor();
+				staticField[*(it->second->getName())] = JavaValue::fromFieldDescriptor(*descriptor);
+			}
+		}
+
+		if (superClass != nullptr)
+		{
+			classFieldsCount += superClass->getClassFieldsCount();
+		}
 	}
 
 	void JVMClass::initConstantPool(const ClassFile::ClassFileData * t)
@@ -153,7 +246,9 @@ namespace jvm
 				auto o = std::dynamic_pointer_cast<const ClassFile::ConstantMemberRef>(ptr);
 				auto p = new ConstantMemberRef();
 				p->setType((ConstantType)ptr->getType());
-				p->setClassName(t->getConstantString(o->getClassIndex()));
+				auto classNameIndex = t->getConstant<const ClassFile::ConstantClassInfo>(o->getClassIndex());
+
+				p->setClassName(t->getConstantString(classNameIndex->getNameIndex()));
 
 				int i = o->getNameAndTypeIndex();
 				if (this->constantPool.find(i) == this->constantPool.end())
@@ -164,7 +259,7 @@ namespace jvm
 					pn->setName(t->getConstantString(on->getNameIndex()));
 					pn->setDescriptor(t->getConstantString(on->getDescriptorIndex()));
 
-					this->constantPool[i] = std::shared_ptr<Constant>(p);
+					this->constantPool[i] = std::shared_ptr<Constant>(pn);
 				}
 
 				p->setNameAndType(this->getConstant<ConstantNameAndType>(i));

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "jvm.h"
+#include "jvmBase.h"
 
 namespace jvm
 {
@@ -144,7 +144,7 @@ namespace jvm
 			this->name = v;
 		}
 
-		std::shared_ptr<const std::string> getName()
+		std::shared_ptr<const std::string> getName() const
 		{
 			return name;
 		}
@@ -154,7 +154,7 @@ namespace jvm
 			this->descriptor = v;
 		}
 
-		std::shared_ptr<const std::string> getDescriptor()
+		std::shared_ptr<const std::string> getDescriptor() const
 		{
 			return descriptor;
 		}
@@ -285,6 +285,7 @@ namespace jvm
 	{
 	public:
 		Field(std::shared_ptr<const ClassFile::Field> t, JVMClass* ownerClass);
+		Field(JVMClass* ownerClass);
 
 		virtual ~Field() {}
 	public:
@@ -298,8 +299,6 @@ namespace jvm
 			return (accessFlag & FieldAccess::ACC_FINAL) != 0;
 		}
 
-		std::string getKey();
-
 		JVMClass* getOwnerClass()
 		{
 			return ownerClass;
@@ -311,9 +310,19 @@ namespace jvm
 			return accessFlag;
 		}
 
+		void setAccessFlag(uint32 v)
+		{
+			accessFlag = v;
+		}
+
 		std::shared_ptr<const std::string> getName() const
 		{
 			return name;
+		}
+
+		void setName(std::shared_ptr<const std::string> v)
+		{
+			name = v;
 		}
 
 		/*
@@ -325,6 +334,11 @@ namespace jvm
 		std::shared_ptr<const std::string> getDescriptor() const
 		{
 			return descriptor;
+		}
+
+		void setDescriptor(std::shared_ptr<const std::string> v)
+		{
+			descriptor = v;
 		}
 
 		const std::map<const std::string, std::shared_ptr<const ClassFile::Attribute>> getAttributes() const
@@ -381,6 +395,11 @@ namespace jvm
 			return (accessFlag & MethodAccess::ACC_STATIC) != 0;
 		}
 
+		bool isNative()
+		{
+			return (accessFlag & MethodAccess::ACC_NATIVE) != 0;
+		}
+
 		std::string getKey()
 		{
 			return *name + "::" + *descriptor;
@@ -391,10 +410,7 @@ namespace jvm
 			return ownerClass;
 		}
 
-		std::shared_ptr<const ClassFile::CodeAttribute> getCode()
-		{
-			return std::dynamic_pointer_cast<const ClassFile::CodeAttribute>(attributes["code"]);
-		}
+		std::shared_ptr<const ClassFile::CodeAttribute> getCode();
 
 	public:
 		uint32 getAccessFlag() const
@@ -448,18 +464,34 @@ namespace jvm
 	class JVMClass
 	{
 	public:
-		JVMClass(const ClassFile::ClassFileData *t);
+		JVMClass(const ClassFile::ClassFileData *t, ClassLoader* classLoader);
+		JVMClass(ClassLoader* classLoader);
 		~JVMClass();
 
 	public:
-		std::shared_ptr<const std::string> getName()
+		std::shared_ptr<const std::string> getName() const
 		{
 			return name;
+		}
+
+		void setName(std::shared_ptr<const std::string> str)
+		{
+			name = str;
 		}
 
 		bool isInterface()
 		{
 			return (accessFlags & ClassAccess::ACC_INTERFACE) != 0;
+		}
+
+		void setAccessFlag(uint32 v)
+		{
+			accessFlags = v;
+		}
+
+		ClassLoader* getClassLoader()
+		{
+			return classLoader;
 		}
 
 	public:
@@ -470,7 +502,22 @@ namespace jvm
 
 		Field* getField(const std::string& k)
 		{
-			return fields[k];
+			auto it = fields.find(k);
+			if (it == fields.end())
+			{
+				if (superClass != nullptr)
+				{
+					return superClass->getField(k);
+				}
+				else
+				{
+					return nullptr;
+				}
+			}
+			else
+			{
+				return it->second;
+			}
 		}
 
 		void setMethod(const std::string& k, Method* field)
@@ -480,7 +527,22 @@ namespace jvm
 
 		Method* getMethod(const std::string& k)
 		{
-			return methods[k];
+			auto it = methods.find(k);
+			if (it == methods.end())
+			{
+				if (superClass != nullptr)
+				{
+					return superClass->getMethod(k);
+				}
+				else
+				{
+					return nullptr;
+				}
+			}
+			else
+			{
+				return it->second;
+			}
 		}
 
 		void setSuperClass(JVMClass *p)
@@ -488,9 +550,21 @@ namespace jvm
 			superClass = p;
 		}
 
+		JVMClass* getSuperClass()
+		{
+			return superClass;
+		}
+
+		JVMObject* getJavaClass();
+
 		void addInterface(JVMClass *p)
 		{
 			interfaces.push_back(p);
+		}
+
+		const std::vector<JVMClass*>& getInterfaces() const
+		{
+			return interfaces;
 		}
 
 	public:
@@ -519,6 +593,21 @@ namespace jvm
 			return getConstant<ConstantDouble>(i)->getData();
 		}
 
+		std::shared_ptr<Constant> getConstantAt(int i)
+		{
+			return this->constantPool.at(i);
+		}
+
+		template <typename T>
+		std::shared_ptr<const T> getConstant(int i) const
+		{
+			if (i == 0)
+				return std::make_shared<const T>();
+
+			std::shared_ptr<Constant> ptr = this->constantPool.at(i);
+			return std::dynamic_pointer_cast<const T>(ptr);
+		}
+
 	public:
 		bool isInited()
 		{
@@ -530,22 +619,55 @@ namespace jvm
 			initStarted = true;
 		}
 
-		void finishInit()
+		bool isStartedInit()
 		{
-			initStarted = false;
-			inited = true;
+			return initStarted;
+		}
+
+		bool isArrayClass()
+		{
+			return (name->at(name->length() - 1) == ']');
+		}
+
+		JVMClass *getArrayEleClass()
+		{
+			return arrayEleClass;
+		}
+
+		void setArrayClass(JVMClass* p)
+		{
+			arrayEleClass = p;
+		}
+
+		void finishInit();
+
+	public:
+		int getClassFieldsCount()
+		{
+			return classFieldsCount;
+		}
+
+		std::shared_ptr<JavaValue> getStaticField(const std::string& n)
+		{
+			auto it = staticField.find(n);
+			if (it != staticField.end())
+			{
+				return it->second;
+			}
+
+			auto fieldInfo = getField(n);
+			if (!fieldInfo)
+			{
+				return std::shared_ptr<JavaValue>();
+			}
+
+			auto fieldData = JavaValue::fromFieldDescriptor(*(fieldInfo->getDescriptor()));
+			staticField[n] = fieldData;
+
+			return fieldData;
 		}
 
 	protected:
-		template <typename T>
-		std::shared_ptr<const T> getConstant(int i) const
-		{
-			if (i == 0)
-				return std::make_shared<const T>();
-
-			std::shared_ptr<Constant> ptr = this->constantPool.at(i);
-			return std::dynamic_pointer_cast<const T>(ptr);
-		}
 
 		void initConstantPool(const ClassFile::ClassFileData *t);
 
@@ -556,7 +678,7 @@ namespace jvm
 		std::vector<JVMClass*> interfaces;
 
 		uint32 accessFlags;
-		std::map<std::string, SoltData> staticField;
+		std::map<std::string, std::shared_ptr<JavaValue>> staticField;
 		std::map<int, std::shared_ptr<Constant>> constantPool;
 
 		std::map<std::string, Field *> fields;
@@ -566,7 +688,11 @@ namespace jvm
 		bool inited;
 		bool initStarted;
 
+		JVMClass *arrayEleClass;
+
 		int classFieldsCount;
+		ClassLoader* classLoader;
+		JVMObject *javaClass;
 	};
 }
 

@@ -4,6 +4,7 @@
 //
 
 #pragma once
+#define _SCL_SECURE_NO_WARNINGS
 
 #include "targetver.h"
 
@@ -12,8 +13,14 @@
 
 
 #include <vector>
+#include <stack>
 #include <string>
 #include <map>
 #include <memory>
+#include <functional>
+#include <numeric>
+#include <iostream>
+
+#include <windows.h>
 
 #include "types.h"

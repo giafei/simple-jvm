@@ -61,13 +61,22 @@
     <ClInclude Include="HeapMemory.h">
       <Filter>jvm</Filter>
     </ClInclude>
-    <ClInclude Include="jvm.h">
-      <Filter>jvm</Filter>
-    </ClInclude>
     <ClInclude Include="JVMClass.h">
       <Filter>jvm</Filter>
     </ClInclude>
     <ClInclude Include="JVMObject.h">
+      <Filter>jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="jvmBase.h">
+      <Filter>jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="JVM.h">
+      <Filter>jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="JVMThread.h">
+      <Filter>jvm</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeMethodHandler.h">
       <Filter>jvm</Filter>
     </ClInclude>
   </ItemGroup>
@@ -100,6 +109,18 @@
       <Filter>jvm</Filter>
     </ClCompile>
     <ClCompile Include="JVMObject.cpp">
+      <Filter>jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="JVM.cpp">
+      <Filter>jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="JVMThread.cpp">
+      <Filter>jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="jvmOpCode.cpp">
+      <Filter>jvm</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeMethodHandler.cpp">
       <Filter>jvm</Filter>
     </ClCompile>
   </ItemGroup>

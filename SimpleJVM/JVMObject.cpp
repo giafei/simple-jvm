@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "JVMObject.h"
+#include "JVMClass.h"
 
 namespace jvm
 {
@@ -13,14 +14,24 @@ namespace jvm
 	{
 	}
 
-	void JVMObject::setField(const std::string & name, SoltData value)
+	std::shared_ptr<JavaValue> JVMObject::getField(const std::string & name)
 	{
+		auto it = fields.find(name);
+		if (it != fields.end())
+		{
+			return it->second;
+		}
 
-	}
+		auto fieldInfo = pClass->getField(name);
+		if (!fieldInfo)
+		{
+			return std::shared_ptr<JavaValue>();
+		}
 
-	SoltData JVMObject::getField(const std::string & name)
-	{
-		return SoltData();
+		auto fieldData = JavaValue::fromFieldDescriptor(*(fieldInfo->getDescriptor()));
+		fields[name] = fieldData;
+
+		return fieldData;
 	}
 }
 

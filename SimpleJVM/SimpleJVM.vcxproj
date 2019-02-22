@@ -71,7 +71,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>F:\WorkDir\C++\third_party\zlib;F:\WorkDir\C++\third_party\zlib\contrib\minizip;$(IncludePath)</IncludePath>
+    <IncludePath>F:\WorkDir\C++\third_party\boost_1_69_0;F:\WorkDir\C++\third_party\zlib;F:\WorkDir\C++\third_party\zlib\contrib\minizip;$(IncludePath)</IncludePath>
     <LibraryPath>F:\WorkDir\C++\third_party\zlib\contrib\vstudio\vc14\x86\ZlibStatDebug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -157,9 +157,12 @@
     <ClInclude Include="DataBlock.h" />
     <ClInclude Include="DataReader.h" />
     <ClInclude Include="HeapMemory.h" />
-    <ClInclude Include="jvm.h" />
+    <ClInclude Include="JVM.h" />
+    <ClInclude Include="jvmBase.h" />
     <ClInclude Include="JVMClass.h" />
     <ClInclude Include="JVMObject.h" />
+    <ClInclude Include="JVMThread.h" />
+    <ClInclude Include="NativeMethodHandler.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="types.h" />
@@ -171,8 +174,12 @@
     <ClCompile Include="ClassReader.cpp" />
     <ClCompile Include="DataReader.cpp" />
     <ClCompile Include="HeapMemory.cpp" />
+    <ClCompile Include="JVM.cpp" />
     <ClCompile Include="JVMClass.cpp" />
     <ClCompile Include="JVMObject.cpp" />
+    <ClCompile Include="jvmOpCode.cpp" />
+    <ClCompile Include="JVMThread.cpp" />
+    <ClCompile Include="NativeMethodHandler.cpp" />
     <ClCompile Include="SimpleJVM.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

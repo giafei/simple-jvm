@@ -21,7 +21,7 @@ public:
 	}
 
 public:
-	const uint8* getData()
+	const uint8* getData() const
 	{
 		return pData;
 	}

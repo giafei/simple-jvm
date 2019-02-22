@@ -1,6 +1,6 @@
 #pragma once
 
-#include "jvm.h"
+#include "jvmBase.h"
 
 namespace jvm
 {
@@ -12,6 +12,7 @@ namespace jvm
 
 	public:
 		JVMObject* alloc(JVMClass *pClass);
+		JVMArray* allocArray(JVMClass* pClass, int length);
 
 	public:
 		JVMObject* getString(const char* str)

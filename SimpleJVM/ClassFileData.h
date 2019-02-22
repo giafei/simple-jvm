@@ -563,17 +563,17 @@ namespace ClassFile
 			return accessFlags;
 		}
 
-		std::shared_ptr<const std::string> getThisClass() const
+		int getThisClass() const
 		{
 			return thisClass;
 		}
 
-		std::shared_ptr<const std::string> getSuperClass() const
+		int getSuperClass() const
 		{
 			return superClass;
 		}
 
-		const std::vector<std::shared_ptr<const ConstantClassInfo>>& getInterfaces() const
+		const std::vector<int>& getInterfaces() const
 		{
 			return interfaces;
 		}
@@ -624,9 +624,9 @@ namespace ClassFile
 		std::map<int, std::shared_ptr<Constant>> constantPool;
 		uint32 accessFlags;
 
-		std::shared_ptr<const std::string> thisClass;
-		std::shared_ptr<const std::string> superClass;
-		std::vector<std::shared_ptr<const ConstantClassInfo>> interfaces;
+		int thisClass;
+		int superClass;
+		std::vector<int> interfaces;
 		std::vector<std::shared_ptr<const Field>> fields;
 		std::vector<std::shared_ptr<const Method>> methods;
 		std::map<std::string, std::shared_ptr<const Attribute>> attributes;

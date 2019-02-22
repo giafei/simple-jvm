@@ -27,15 +27,14 @@ namespace ClassFile
 		}
 
 		this->accessFlags = reader.readUint16();
-		this->thisClass = getConstantString(reader.readUint16());
-		this->superClass = getConstantString(reader.readUint16());
+		this->thisClass = reader.readUint16();
+		this->superClass = reader.readUint16();
 
 		int interfaceCount = reader.readUint16();
 		this->interfaces.reserve(interfaceCount);
 		for (int i=0; i<interfaceCount; i++)
 		{
-			std::shared_ptr<const Constant> v = constantPool[reader.readUint16()];
-			this->interfaces.push_back(std::dynamic_pointer_cast<const ConstantClassInfo>(v));
+			this->interfaces.push_back(reader.readUint16());
 		}
 
 		int fieldsCount = reader.readUint16();
