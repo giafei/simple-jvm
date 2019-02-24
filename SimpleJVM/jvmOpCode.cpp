@@ -10,7 +10,43 @@
 
 namespace jvm
 {
-	void UTF8StringToUTF16(const std::string & str, std::wstring& result);
+	bool objInstanceOf(JVMObject* objPtr, JVMClass* classPtr)
+	{
+		auto objClassPtr = objPtr->getClass();
+
+		while (objClassPtr != nullptr)
+		{
+			if (objClassPtr == classPtr)
+				break;
+
+			bool isInterface = false;
+			auto interfaces = objClassPtr->getInterfaces();
+			for (auto it = interfaces.begin(); it != interfaces.end(); it++)
+			{
+				if (classPtr == *it)
+				{
+					isInterface = true;
+					break;
+				}
+			}
+
+			if (isInterface)
+			{
+				break;
+			}
+
+			objClassPtr = objClassPtr->getSuperClass();
+		}
+
+		if (objClassPtr == nullptr)
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
 
 	std::string methodKey(std::shared_ptr<const ConstantNameAndType> t)
 	{
@@ -30,7 +66,7 @@ namespace jvm
 
 		auto prepare = [&]()
 		{
-			f = this->stacks.top();
+			f = this->currentFrame();
 			method = f->getMethod();
 
 			if (method != nullptr)
@@ -42,8 +78,12 @@ namespace jvm
 				{
 					codeData = method->getCode()->getCode()->getData();
 				}
-			}
 
+// 				if (method->getName()->compare("acquireConstructorAccessor") == 0)
+// 				{
+// 					printf("1\n");
+// 				}
+			}
 
 			pPC = f->getPC();
 		};
@@ -135,6 +175,9 @@ namespace jvm
 
 		while (method != nullptr)
 		{
+			if (isExceptionNow())
+				return;
+
 			if (method->isNative())
 			{
 				invokeNative(method);
@@ -219,12 +262,7 @@ namespace jvm
 				case CONSTANT_String_info:
 				{
 					auto strPtr = pClass->getConstString(i);
-					auto strObj = heap->getString(strPtr->c_str());
-					if (strObj == nullptr)
-					{
-						strObj = allocString(*strPtr);
-						heap->addString(strPtr->c_str(), strObj);
-					}
+					auto strObj = JVMObjectCreator::allocString(*strPtr);
 					f->pushObject(strObj);
 					break;
 				}
@@ -234,7 +272,7 @@ namespace jvm
 					auto strPtr = pClass->getConstString(i);
 					auto p = pClass->getClassLoader()->loadClass(strPtr->c_str());
 					checkClassInited(p);
-					f->pushObject(p->getJavaClass());
+					f->pushObject(p->getJavaClassObject());
 					break;
 				}
 
@@ -394,7 +432,14 @@ namespace jvm
 			{
 				int i = f->popInt();
 				JVMArray *pArr = dynamic_cast<JVMArray*>(f->popObject());
-				f->pushInt(*(wchar_t*)pArr->getAddress(i));
+				if (i >= pArr->getLength())
+				{
+					dispathException(loadAndInit("java/lang/ArrayIndexOutOfBoundsException"));
+				}
+				else
+				{
+					f->pushInt(*(wchar_t*)pArr->getAddress(i));
+				}
 				break;
 			}
 
@@ -1471,59 +1516,6 @@ namespace jvm
 						wprintf(L"%f\n", v);
 						break;
 					}
-					else if (methodName == "compareAndSwapInt::(Ljava/lang/Object;JII)Z")
-					{
-						f->popInt();
-						f->popInt();
-						f->popLong();
-						f->popObject();
-						f->popObject(); //this
-						f->pushInt(1);
-						break;
-					}
-					else if (methodName == "getObjectVolatile::(Ljava/lang/Object;J)Ljava/lang/Object;")
-					{
-						int64 i = f->popLong();
-						auto pArr = dynamic_cast<JVMArray*>(f->popObject());
-						f->popObject(); //this
-
-						JVMObject **p = (JVMObject **)pArr->getAddress(i);
-
-						f->pushObject(*p);
-						break;
-					}
-					else if (methodName == "compareAndSwapObject::(Ljava/lang/Object;JLjava/lang/Object;Ljava/lang/Object;)Z")
-					{
-						JVMObject *pNew = f->popObject();
-						JVMObject *pOld = f->popObject();
-
-						int64 i = f->popLong();
-						auto pArr = dynamic_cast<JVMArray*>(f->popObject());
-						f->popObject(); //this
-
-						JVMObject **p = (JVMObject **)pArr->getAddress(i);
-						*p = pNew;
-
-						f->pushInt(1);
-						break;
-					}
-					else if (methodName == "compareAndSwapLong::(Ljava/lang/Object;JJJ)Z")
-					{
-						f->popLong();
-						f->popLong();
-						f->popLong();
-						f->popObject();
-						f->popObject();
-						f->pushInt(1);
-						break;
-					}
-					else if (methodName == "getProperty::(Ljava/lang/String;)Ljava/lang/String;")
-					{
-						f->popObject();
-						f->popObject();
-						f->pushObject(nullptr);
-						break;
-					}
 
 					throw new std::exception("NullPointerException");
 				}
@@ -1536,25 +1528,6 @@ namespace jvm
 
 				auto nextFrame = pushFrame(method);
 
-				if (methodRef->getNameAndType()->getName()->compare("compareAndSet") == 0)
-				{
-					//TODO
-				}
-				else if (
-					(methodRef->getClassName()->compare("java/util/concurrent/atomic/AtomicInteger") == 0) &&
-					(methodRef->getNameAndType()->getName()->compare("getAndAdd") == 0)
-					)
-				{
-					auto field = nextFrame->getLocalObject(0)->getField("value");
-					int v = field->getIntValue();
-					v += nextFrame->getLocalInt(1);
-					
-					field->setIntValue(v);
-					f->pushInt(v);
-
-					popFrame();
-				}
-
 				prepare();
 				break;
 			}
@@ -1565,38 +1538,17 @@ namespace jvm
 				//具体函数 指定类的函数 或 静态函数
 				auto methodRef = pClass->getConstant<ConstantMemberRef>(readUInt16());
 				auto methodName(methodKey(methodRef->getNameAndType()));
-
-				if (methodRef->getClassName()->compare("java/lang/Class$Atomic") == 0) //使用了unsafe 不支持unsafe
+				auto classPtr = loadAndInit(methodRef->getClassName()->c_str());
+				auto method = classPtr->getMethod(methodName);
+				if (method == nullptr)
 				{
-					f->popInt();
-					f->popInt();
-					f->popInt();
-					f->pushInt(1); //所有函数都是3个参数， 返回值都是boolean
-					break;
+					throw new std::exception("Method NullPointerException");
 				}
-				else
-				{
-					auto classPtr = loadAndInit(methodRef->getClassName()->c_str());
-					auto method = classPtr->getMethod(methodName);
-					if (method == nullptr)
-					{
-						throw new std::exception("Method NullPointerException");
-					}
 
-					pushFrame(method);
+				pushFrame(method);
 
-
-					if (methodRef->getClassName()->compare("java/util/concurrent/atomic/AtomicReferenceFieldUpdater$AtomicReferenceFieldUpdaterImpl") == 0)
-					{
-						if (methodName == "<init>::(Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;)V") //使用了unsafe 不支持unsafe
-						{
-							popFrame();
-						}
-					}
-
-					prepare();
-					break;
-				}
+				prepare();
+				break;
 			}
 
 			case 0xB9: //invokeinterface
@@ -1713,7 +1665,8 @@ namespace jvm
 
 			case 0xBF: //athrow
 			{
-				throw new std::exception("Method NullPointerException");
+				auto exPtr = f->popObject();
+				dispathException(exPtr);
 				break;
 			}
 
@@ -1723,36 +1676,10 @@ namespace jvm
 				auto objPtr = f->popObject();
 				if (objPtr != nullptr)
 				{
-					auto objClassPtr = objPtr->getClass();
-
 					auto classRef = pClass->getConstant<ConstantClassInfo>(i);
 					auto classPtr = loadAndInit(classRef->getData()->c_str());
 
-					while (objClassPtr != nullptr)
-					{
-						if (objClassPtr == classPtr)
-							break;
-
-						bool isInterface = false;
-						auto interfaces = objClassPtr->getInterfaces();
-						for (auto it = interfaces.begin(); it != interfaces.end(); it++)
-						{
-							if (classPtr == *it)
-							{
-								isInterface = true;
-								break;
-							}
-						}
-
-						if (isInterface)
-						{
-							break;
-						}
-
-						objClassPtr = objClassPtr->getSuperClass();
-					}
-
-					if (objClassPtr == nullptr)
+					if (!objInstanceOf(objPtr, classPtr))
 					{
 						throw new std::exception("类型转换失败");
 					}
@@ -1767,42 +1694,16 @@ namespace jvm
 				auto objPtr = f->popObject();
 				if (objPtr != nullptr)
 				{
-					auto objClassPtr = objPtr->getClass();
-
 					auto classRef = pClass->getConstant<ConstantClassInfo>(i);
 					auto classPtr = loadAndInit(classRef->getData()->c_str());
 
-					while (objClassPtr != nullptr)
+					if (objInstanceOf(objPtr, classPtr))
 					{
-						if (objClassPtr == classPtr)
-							break;
-
-						bool isInterface = false;
-						auto interfaces = objClassPtr->getInterfaces();
-						for (auto it = interfaces.begin(); it != interfaces.end(); it++)
-						{
-							if (classPtr == *it)
-							{
-								isInterface = true;
-								break;
-							}
-						}
-
-						if (isInterface)
-						{
-							break;
-						}
-
-						objClassPtr = objClassPtr->getSuperClass();
-					}
-
-					if (objClassPtr == nullptr)
-					{
-						f->pushInt(0);
+						f->pushInt(1);
 					}
 					else
 					{
-						f->pushInt(1);
+						f->pushInt(0);
 					}
 				}
 				else
@@ -1837,7 +1738,7 @@ namespace jvm
 					arrLens[w-i-1] = (f->popInt());
 				}
 
-				f->pushObject(allocArray(classPtr, arrLens, 0));
+				f->pushObject(JVMObjectCreator::allocArray(classPtr, arrLens, 0));
 				break;
 			}
 
@@ -1901,5 +1802,132 @@ namespace jvm
 				break;
 			}
 		}
+	}
+
+	void JVMThread::dispathException(JVMObject *ex)
+	{
+		while (true)
+		{
+			auto frame = currentFrame();
+
+			if (frame == nullptr)
+			{
+				//到了main函数外
+				printf("未捕获的异常\n");
+				setUnHandledException(ex);
+				return;
+			}
+			else
+			{
+				auto method = frame->getMethod();
+
+				if (method != nullptr && !method->isNative())
+				{
+					int pc = *(frame->getPC())  - 1;
+					auto exTable = method->getCode()->getExceptions();
+
+					for (auto it = exTable.begin(); it != exTable.end(); it++)
+					{
+						ClassFile::CodeExceptionTableData&  data = *it;
+						if ((pc < data.startPC) || (pc >= data.endPC))
+						{
+							continue;
+						}
+
+						bool canCatch = false;
+
+						if (data.catchType == 0) //catch all
+						{
+							canCatch = true;
+						}
+						else
+						{
+							auto classRef = method->getOwnerClass()->getConstant<ConstantClassInfo>(data.catchType);
+							auto classPtr = justLoad(classRef->getData()->c_str());
+
+							if (objInstanceOf(ex, classPtr))
+							{
+								canCatch = true;
+							}
+						}
+
+						if (canCatch)
+						{
+							frame->clearStack();
+							frame->pushObject(ex);
+							*frame->getPC() = data.handlerPC;
+							return;
+						}
+					}
+				}
+
+				//当前函数没有捕获代码，去下一个函数找找看
+				popFrame();
+			}
+		}
+	}
+
+	void JVMThread::dispathException(JVMClass* exClass)
+	{
+		JVMObject *ex = HeapMemory::getHeap()->alloc(exClass);
+		dispathException(ex);
+	}
+
+	JVMArray* JVMThread::fillStackTrace(JVMObject *ex, int dummy, bool fromNative)
+	{
+		int i = stacks.size() - 1;
+
+		while (i >= 0)
+		{
+			//找到异常触发点
+			Method* method = stacks[i]->getMethod();
+			if (method->isNative() || (method->getName()->compare("<init>") == 0))
+			{
+				i -= 1;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		int j = 0, n = 0;
+		for (; j<=i; j++)
+		{
+			if (stacks[j]->getMethod() != nullptr)
+				n++;
+		}
+
+		HeapMemory *heap = HeapMemory::getHeap();
+		auto classPtr = loadAndInit("java/lang/StackTraceElement");
+		JVMArray *arrPtr = heap->allocArray(loadAndInit("[java/lang/StackTraceElement"), n);
+
+		auto fileName = JVMObjectCreator::allocString("unknown");
+		
+		j = 0;
+		for (; i>=0; i--)
+		{
+			Method* method = stacks[i]->getMethod();
+			if (method != nullptr)
+			{
+				auto objPtr = heap->alloc(classPtr);
+				objPtr->getField("declaringClass")->setObjectValue(JVMObjectCreator::allocString(*(method->getOwnerClass()->getName())));
+				objPtr->getField("methodName")->setObjectValue(JVMObjectCreator::allocString(*(method->getName())));
+				objPtr->getField("fileName")->setObjectValue(fileName);
+
+				if (method->isNative())
+				{
+					objPtr->getField("lineNumber")->setIntValue(-2);
+				}
+				else
+				{
+					objPtr->getField("lineNumber")->setIntValue(1);
+				}
+
+				*(arrPtr->geElementAddress<JVMObject*>(j++)) = objPtr;
+			}
+		}
+
+		return arrPtr;
 	}
 }

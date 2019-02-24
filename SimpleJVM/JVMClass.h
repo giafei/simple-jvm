@@ -288,6 +288,7 @@ namespace jvm
 		Field(JVMClass* ownerClass);
 
 		virtual ~Field() {}
+
 	public:
 		bool isStatic()
 		{
@@ -297,6 +298,11 @@ namespace jvm
 		bool isFinal()
 		{
 			return (accessFlag & FieldAccess::ACC_FINAL) != 0;
+		}
+
+		bool isPublic()
+		{
+			return (accessFlag & FieldAccess::ACC_PUBLIC) != 0;
 		}
 
 		JVMClass* getOwnerClass()
@@ -400,6 +406,21 @@ namespace jvm
 			return (accessFlag & MethodAccess::ACC_NATIVE) != 0;
 		}
 
+		bool isPublic()
+		{
+			return (accessFlag & MethodAccess::ACC_PUBLIC) != 0;
+		}
+
+		void setSlot(int i)
+		{
+			slot = i;
+		}
+
+		int getSlot()
+		{
+			return slot;
+		}
+
 		std::string getKey()
 		{
 			return *name + "::" + *descriptor;
@@ -411,6 +432,7 @@ namespace jvm
 		}
 
 		std::shared_ptr<const ClassFile::CodeAttribute> getCode();
+		std::shared_ptr<const ClassFile::ExceptionAttribute> getException();
 
 	public:
 		uint32 getAccessFlag() const
@@ -438,6 +460,7 @@ namespace jvm
 		}
 
 	private:
+		int slot;
 		uint32 accessFlag;
 		std::shared_ptr<const std::string> name;
 		std::shared_ptr<const std::string> descriptor;
@@ -489,35 +512,38 @@ namespace jvm
 			accessFlags = v;
 		}
 
+		uint32 getAccessFlag()
+		{
+			return accessFlags;
+		}
+
 		ClassLoader* getClassLoader()
 		{
 			return classLoader;
 		}
 
 	public:
-		void setField(const std::string& k, Field* field)
+		void addField(Field* field);
+		Field* getField(const std::string& k);
+
+		int getFieldKey(const std::string& k)
 		{
-			fields[k] = field;
+			return fieldIndexs[k];
 		}
 
-		Field* getField(const std::string& k)
+		Field* getFieldByKey(int key)
 		{
-			auto it = fields.find(k);
-			if (it == fields.end())
-			{
-				if (superClass != nullptr)
-				{
-					return superClass->getField(k);
-				}
-				else
-				{
-					return nullptr;
-				}
-			}
-			else
-			{
-				return it->second;
-			}
+			return fields[key];
+		}
+
+		const std::map<int, Field*>& getAllDeclaredField()
+		{
+			return fields;
+		}
+
+		const std::map<std::string, Method *>& getAllDeclaredMethod()
+		{
+			return methods;
 		}
 
 		void setMethod(const std::string& k, Method* field)
@@ -545,6 +571,19 @@ namespace jvm
 			}
 		}
 
+		Method* getDeclaredMethod(const std::string& k)
+		{
+			auto it = methods.find(k);
+			if (it == methods.end())
+			{
+				return nullptr;
+			}
+			else
+			{
+				return it->second;
+			}
+		}
+
 		void setSuperClass(JVMClass *p)
 		{
 			superClass = p;
@@ -555,7 +594,7 @@ namespace jvm
 			return superClass;
 		}
 
-		JVMObject* getJavaClass();
+		JVMObject* getJavaClassObject();
 
 		void addInterface(JVMClass *p)
 		{
@@ -624,9 +663,20 @@ namespace jvm
 			return initStarted;
 		}
 
+	public:
 		bool isArrayClass()
 		{
 			return (name->at(name->length() - 1) == ']');
+		}
+
+		bool isPrimitive()
+		{
+			return primitive;
+		}
+
+		void setPrimitive(bool v)
+		{
+			primitive = v;
 		}
 
 		JVMClass *getArrayEleClass()
@@ -642,11 +692,6 @@ namespace jvm
 		void finishInit();
 
 	public:
-		int getClassFieldsCount()
-		{
-			return classFieldsCount;
-		}
-
 		std::shared_ptr<JavaValue> getStaticField(const std::string& n)
 		{
 			auto it = staticField.find(n);
@@ -661,6 +706,11 @@ namespace jvm
 				return std::shared_ptr<JavaValue>();
 			}
 
+			if (fieldInfo->getOwnerClass() != this)
+			{
+				return superClass->getStaticField(n);
+			}
+
 			auto fieldData = JavaValue::fromFieldDescriptor(*(fieldInfo->getDescriptor()));
 			staticField[n] = fieldData;
 
@@ -668,7 +718,6 @@ namespace jvm
 		}
 
 	protected:
-
 		void initConstantPool(const ClassFile::ClassFileData *t);
 
 	protected:
@@ -681,18 +730,26 @@ namespace jvm
 		std::map<std::string, std::shared_ptr<JavaValue>> staticField;
 		std::map<int, std::shared_ptr<Constant>> constantPool;
 
-		std::map<std::string, Field *> fields;
+		std::map<int, Field *> fields;
+		std::map<std::string, int> fieldIndexs;
 		std::map<std::string, Method *> methods;
 
 	protected:
 		bool inited;
 		bool initStarted;
+		bool primitive = false;
 
 		JVMClass *arrayEleClass;
 
-		int classFieldsCount;
 		ClassLoader* classLoader;
 		JVMObject *javaClass;
+
+	public:
+		static int fieldNoPos;
+
+	private:
+		int nextFieldIndex = 1;
+		int nextMethodIndex = 1;
 	};
 }
 

@@ -27,6 +27,7 @@ namespace jvm
 
 	protected:
 		JVMClass* defineArrayClass(const char* className);
+		JVMClass* definePrimitiveClass(const char* typeName);
 		JVMClass* defineClass(std::shared_ptr<const ClassFile::ClassFileData> classData);
 
 	protected:

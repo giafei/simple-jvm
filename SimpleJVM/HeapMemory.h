@@ -13,6 +13,7 @@ namespace jvm
 	public:
 		JVMObject* alloc(JVMClass *pClass);
 		JVMArray* allocArray(JVMClass* pClass, int length);
+		JAVAClassJVMObject* allocClassObject(JVMClass *pClass, JVMClass* typeClass);
 
 	public:
 		JVMObject* getString(const char* str)
@@ -24,6 +25,10 @@ namespace jvm
 		{
 			stringPool[str] = obj;
 		}
+
+	public:
+		static HeapMemory* getHeap();
+		static int arrayElementSize(JVMClass* pClass);
 
 	protected:
 		std::map<std::string, JVMObject*> stringPool;

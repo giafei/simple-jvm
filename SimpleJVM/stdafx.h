@@ -24,3 +24,17 @@
 #include <windows.h>
 
 #include "types.h"
+
+namespace jvm
+{
+	class JVMArray;
+}
+
+void UTF16StringToUTF8(std::string& result, const std::wstring& src);
+void UTF16StringToUTF8(std::string& result, const wchar_t* src, int len);
+void UTF16StringToUTF8(std::string& result, jvm::JVMArray *charArr);
+
+void UTF8StringToUTF16(std::wstring& result, const std::string & str);
+void UTF8StringToUTF16(std::wstring& result, const char* str, int len);
+void UTF8StringToUTF16(jvm::JVMArray *charArr, const char* str, int len);
+void UTF8StringToUTF16(jvm::JVMArray *charArr, const std::string & str);

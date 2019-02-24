@@ -5,13 +5,17 @@
 
 namespace jvm
 {
+	HeapMemory* pInstance = nullptr;
+
 	HeapMemory::HeapMemory()
 	{
+		pInstance = this;
 	}
 
 
 	HeapMemory::~HeapMemory()
 	{
+		pInstance = this;
 	}
 
 	JVMObject * HeapMemory::alloc(JVMClass * pClass)
@@ -20,6 +24,21 @@ namespace jvm
 	}
 
 	JVMArray * HeapMemory::allocArray(JVMClass *pClass, int length)
+	{
+		return new JVMArray(pClass, length, arrayElementSize(pClass));
+	}
+
+	JAVAClassJVMObject * HeapMemory::allocClassObject(JVMClass * pClass, JVMClass * typeClass)
+	{
+		return new JAVAClassJVMObject(pClass, typeClass);
+	}
+
+	HeapMemory * HeapMemory::getHeap()
+	{
+		return pInstance;
+	}
+
+	int HeapMemory::arrayElementSize(JVMClass * pClass)
 	{
 		int eleSize = 4;
 		auto name = pClass->getName();
@@ -48,6 +67,6 @@ namespace jvm
 			eleSize = 8;
 		}
 
-		return new JVMArray(pClass, length, eleSize);
+		return eleSize;
 	}
 }

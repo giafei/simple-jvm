@@ -29,12 +29,60 @@ namespace jvm
 		}
 
 		std::string k(className);
-		if ((k[0] == '[') && (k[1] == 'L'))
+		if ((className[0] == '[') && (className[1] == 'L'))
 		{
 			int i = k.length();
 			if (k[i - 1] == ';')
 			{
 				k = "[" + k.substr(2, i - 3);
+			}
+		}
+		else if ((className[0] == 'L') && (className[k.length() - 1] == ';'))
+		{
+			k = k.substr(1, k.length() - 2);
+		}
+		else if (className[1] == 0x00)
+		{
+			switch (*className)
+			{
+			case 'Z':
+				k = "boolean";
+				break;
+
+			case 'B':
+				k = "byte";
+				break;
+
+			case 'S':
+				k = "short";
+				break;
+
+			case 'C':
+				k = "char";
+				break;
+
+			case 'I':
+				k = "int";
+				break;
+
+			case 'J':
+				k = "long";
+				break;
+
+			case 'F':
+				k = "float";
+				break;
+
+			case 'D':
+				k = "double";
+				break;
+
+			case 'V':
+				k = "void";
+				break;
+
+			default:
+				break;
 			}
 		}
 
@@ -44,6 +92,10 @@ namespace jvm
 			if (className[0] == '[')
 			{
 				p = defineArrayClass(k.c_str());
+			}
+			else if (k.find('/') == std::string::npos)
+			{
+				p = definePrimitiveClass(className);
 			}
 			else
 			{
@@ -146,8 +198,19 @@ namespace jvm
 		field->setName(std::shared_ptr<const std::string>(new std::string("length")));
 		field->setDescriptor(std::shared_ptr<const std::string>(new std::string("I")));
 
-		p->setField(*field->getName(), field);
+		p->addField(field);
 		p->finishInit();
+
+		return p;
+	}
+
+	JVMClass * ClassLoader::definePrimitiveClass(const char * typeName)
+	{
+		JVMClass *p = new JVMClass(this);
+
+		p->setAccessFlag(ClassAccess::ACC_PUBLIC);
+		p->setName(std::shared_ptr<const std::string>(new std::string(typeName)));
+		p->setPrimitive(true);
 
 		return p;
 	}

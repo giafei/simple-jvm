@@ -271,7 +271,12 @@ namespace ClassFile
 			int exCount = reader.readUint16();
 			for (int i=0; i<exCount; i++)
 			{
-				p->addException(reader.readUint64());
+				CodeExceptionTableData tableData;
+				tableData.startPC = reader.readUint16();
+				tableData.endPC = reader.readUint16();
+				tableData.handlerPC = reader.readUint16();
+				tableData.catchType = reader.readUint16();
+				p->addException(tableData);
 			}
 
 			int attrCount = reader.readUint16();
@@ -305,7 +310,7 @@ namespace ClassFile
 		}
 		else if (name->compare("Exceptions") == 0)
 		{
-			ExceptioneAttribute *p = new ExceptioneAttribute();
+			ExceptionAttribute *p = new ExceptionAttribute();
 			p->setName(name);
 
 			reader.readUint32(); //²»ÖØÒª
@@ -313,7 +318,7 @@ namespace ClassFile
 			for (int i=0; i<exCount; i++)
 			{
 				p->addException(
-					std::dynamic_pointer_cast<const ConstantString>(constantPool[reader.readUint16()])
+					std::dynamic_pointer_cast<const ConstantClassInfo>(constantPool[reader.readUint16()])
 				);
 			}
 

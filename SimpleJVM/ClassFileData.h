@@ -329,6 +329,14 @@ namespace ClassFile
 		std::shared_ptr<const std::string> data;
 	};
 
+	struct CodeExceptionTableData
+	{
+		uint16 startPC;
+		uint16 endPC;
+		uint16 handlerPC;
+		uint16 catchType;
+	};
+
 	class CodeAttribute : public Attribute
 	{
 	public:
@@ -372,12 +380,12 @@ namespace ClassFile
 			return code;
 		}
 
-		void addException(const uint64& e)
+		void addException(CodeExceptionTableData& e)
 		{
 			exceptionTable.push_back(e);
 		}
 
-		const std::vector<uint64>& getExceptions()
+		const std::vector<CodeExceptionTableData>& getExceptions()  const
 		{
 			return exceptionTable;
 		}
@@ -386,7 +394,7 @@ namespace ClassFile
 		int maxStack;
 		int maxLocals;
 		std::shared_ptr<const DataBlock> code;
-		std::vector<uint64> exceptionTable;
+		std::vector<CodeExceptionTableData> exceptionTable;
 		std::map<const std::string, std::shared_ptr<const Attribute>> attributes;
 	};
 
@@ -407,21 +415,21 @@ namespace ClassFile
 		std::shared_ptr<const Constant> data;
 	};
 
-	class ExceptioneAttribute : public Attribute
+	class ExceptionAttribute : public Attribute
 	{
 	public:
-		const std::vector<std::shared_ptr<const ConstantString>> getData() const
+		const std::vector<std::shared_ptr<const ConstantClassInfo>> getData() const
 		{
 			return data;
 		}
 
-		void addException(std::shared_ptr<const ConstantString> data)
+		void addException(std::shared_ptr<const ConstantClassInfo> data)
 		{
 			this->data.push_back(data);
 		}
 
 	protected:
-		std::vector<std::shared_ptr<const ConstantString>> data;
+		std::vector<std::shared_ptr<const ConstantClassInfo>> data;
 	};
 
 	class UnsupportAttribute : public Attribute

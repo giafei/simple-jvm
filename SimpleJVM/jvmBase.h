@@ -8,7 +8,7 @@ namespace ClassFile
 	class StringAttribute;
 	class CodeAttribute;
 	class ConstantValueAttribute;
-	class ExceptioneAttribute;
+	class ExceptionAttribute;
 	class UnsupportAttribute;
 	class ClassFileData;
 }
@@ -25,6 +25,8 @@ namespace jvm
 	class JVM;
 	class ClassLoader;
 	class StackFrame;
+	class JAVAClassJVMObject;
+	class ClassPath;
 
 	struct SoltData
 	{
@@ -158,6 +160,11 @@ namespace jvm
 		int getSoltSize()
 		{
 			return soltSize;
+		}
+
+		void setSoltSize(int i)
+		{
+			soltSize = i;
 		}
 
 		SoltData getSolt(int i)

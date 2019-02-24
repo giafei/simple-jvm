@@ -134,6 +134,11 @@ namespace jvm
 			return opStack.pop().getObject();
 		}
 
+		void clearStack()
+		{
+			opStack.clear();
+		}
+
 		void pushObject(JVMObject* v)
 		{
 			opStack.push(v);
@@ -254,13 +259,35 @@ namespace jvm
 		std::shared_ptr<JavaValue> execute(JVMObject *pThis, Method* method, const std::vector<SoltData>& arguments);
 		void executeMain(JVMClass *pClass, const std::vector<std::string>& args);
 
-		JVMObject* allocString(const std::string& str);
-		JVMObject* allocString(const std::wstring& str);
-		JVMArray* allocArray(JVMClass* classPtr, std::vector<int>& arrLen, int lenPos);
+		std::shared_ptr<JavaValue> execute(JVMObject *pThis, Method* method)
+		{
+			return execute(pThis, method, std::vector<SoltData>());
+		}
+
 		JVMObject* getJavaThread();
 
 	public:
+		void dispathException(JVMObject *ex);
+		void dispathException(JVMClass* exClass);
+		JVMArray* fillStackTrace(JVMObject *ex, int dummy, bool fromNative);
+		bool isExceptionNow()
+		{
+			return unhandledException != nullptr;
+		}
+
+		void setUnHandledException(JVMObject* e)
+		{
+			unhandledException = e;
+		}
+
+		JVMObject* getUnHandledException()
+		{
+			return unhandledException;
+		}
+
+	public:
 		void initializeSystem();
+		JVMClass* justLoad(const char* className);
 		JVMClass* loadAndInit(const char* className);
 
 	protected:
@@ -275,7 +302,10 @@ namespace jvm
 		StackFrame* pushFrame(Method* method);
 		StackFrame* currentFrame()
 		{
-			return stacks.top();
+			if (stacks.size() == 0)
+				return nullptr;
+
+			return stacks[stacks.size()-1];
 		}
 
 		void popFrame();
@@ -285,13 +315,23 @@ namespace jvm
 		static JVMThread* current();
 
 	protected:
-		std::stack<StackFrame*> stacks;
+		JVMObject *unhandledException;
+
+		std::vector<StackFrame*> stacks;
 		JVM *pJVM;
 		JVMObject *javaThread;
-
-		std::map<std::string, int> unsafeHackClass;
 	};
 
+	class JVMObjectCreator
+	{
+	public:
+		static JVMObject* allocString(const std::string& str);
+		static JVMArray* allocArray(JVMClass* classPtr, std::vector<int>& arrLen, int lenPos);
+
+	private:
+		static JVMObject* allocString(const std::wstring& str);
+		static JVMObject* allocString(JVMArray* charArr);
+	};
 }
 
 

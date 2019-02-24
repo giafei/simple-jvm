@@ -29,8 +29,12 @@ namespace jvm
 	public:
 		void run(int argc, char *argv[]);
 
+	private:
+		void initJVM();
+
 	protected:
 		ClassLoader *classLoader;
+		ClassPath *classPath;
 		HeapMemory *heap;
 		JVMThread *thread;
 	};

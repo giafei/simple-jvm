@@ -9,7 +9,7 @@ namespace jvm
 {
 	JVM::JVM()
 	{
-		ClassPath *classPath = new ClassPath();
+		classPath = new ClassPath();
 
 		size_t v = 0;
 		char buf[512] = { 0 };
@@ -39,8 +39,6 @@ namespace jvm
 		thread->loadAndInit("java/lang/Object");
 		thread->loadAndInit("java/lang/ClassLoader");
 		thread->loadAndInit("java/lang/Class");
-
-		thread->initializeSystem();
 	}
 
 
@@ -53,16 +51,53 @@ namespace jvm
 
 	void JVM::run(int argc, char * argv[])
 	{
+		initJVM();
+
 		std::vector<std::string> args;
 		args.reserve(argc - 2);
 
-		for (int i=2; i<argc; i++)
+		int i = 1;
+		for (; i < argc; i++)
+		{
+			if (argv[i][0] == '-')
+			{
+				if (strcmp(argv[i], "-classpath") == 0)
+				{
+					classPath->addFolder(argv[++i]);
+				}
+				else
+				{
+					++i;
+				}
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		JVMClass *pClass = thread->loadAndInit(argv[i++]);
+		for (; i<argc; i++)
 		{
 			args.push_back(argv[i]);
 		}
 
-		JVMClass *pClass = thread->loadAndInit(argv[1]);
 		thread->executeMain(pClass, args);
 	}
 
+	void JVM::initJVM()
+	{
+		//定义基础类型
+		classLoader->loadClass("byte");
+		classLoader->loadClass("short");
+		classLoader->loadClass("int");
+		classLoader->loadClass("long");
+		classLoader->loadClass("float");
+		classLoader->loadClass("double");
+		classLoader->loadClass("char");
+		classLoader->loadClass("boolean");
+		classLoader->loadClass("void");
+
+		thread->initializeSystem();
+	}
 }

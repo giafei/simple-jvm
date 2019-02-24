@@ -26,10 +26,6 @@ namespace jvm
 		javaThread = nullptr;
 
 		pThread = this;
-		unsafeHackClass["java/lang/Class$Atomic"] = 1;
-		unsafeHackClass["java/util/concurrent/atomic/AtomicInteger"] = 1;
-		unsafeHackClass["java/util/concurrent/ConcurrentHashMap"] = 1;
-		unsafeHackClass["java/io/File"] = 1;
 	}
 
 	JVMThread::~JVMThread()
@@ -39,14 +35,6 @@ namespace jvm
 		{
 			popFrame();
 		}
-	}
-
-	void UTF8StringToUTF16(const std::string & str, std::wstring& result)
-	{
-		int n = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.length(), NULL, 0);
-		result.resize(n + 1);
-		MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.length(), (wchar_t*)result.c_str(), result.length() * 2);
-		result.resize(n);
 	}
 
 	std::shared_ptr<JavaValue> JVMThread::execute(JVMObject *pThis, Method * method, const std::vector<SoltData>& arguments)
@@ -67,12 +55,24 @@ namespace jvm
 		pushFrame(method);
 
 		execute();
+		if (isExceptionNow())
+		{
+			return std::shared_ptr<JavaValue>();
+		}
 
 		try
 		{
 			auto r = JavaValue::fromMethodDescriptor(*(method->getDescriptor()));
 
-			f->popToJavaValue(r);
+			if (r->getSoltSize() == 0)
+			{
+				r->setSoltSize(1);
+				r->setObjectValue(nullptr);
+			}
+			else
+			{
+				f->popToJavaValue(r);
+			}
 			popFrame();
 
 			return r;
@@ -90,52 +90,23 @@ namespace jvm
 
 		std::vector<SoltData> arguments;
 		
-		auto strArrClass = loadAndInit("[java/lang/String");
+		auto strArrClass = loadAndInit("[Ljava/lang/String;");
 		auto strArr = pJVM->getHeap()->allocArray(strArrClass, args.size());
 
-		for (int i=0; i<args.size(); i++)
+		for (int i=0; i<(int)args.size(); i++)
 		{
-			*(JVMObject**)strArr->getAddress(i) = allocString(args[i]);
+			*(JVMObject**)strArr->getAddress(i) = JVMObjectCreator::allocString(args[i]);
 		}
 
 		arguments.push_back(strArr);
 		execute(nullptr, method, arguments);
 	}
 
-	JVMObject* JVMThread::allocString(const std::string & str)
-	{
-		std::wstring v;
-		UTF8StringToUTF16(str, v);
-
-		return allocString(v);
-	}
-
-	JVMObject* JVMThread::allocString(const std::wstring & str)
-	{
-		auto classLoader = pJVM->getClassLoader();
-
-		auto arr = pJVM->getHeap()->allocArray(classLoader->loadClass("[C"), str.length()); //char[]
-		if (str.length() > 0)
-		{
-			auto ptr = arr->getAddress(0);
-			memcpy(ptr, str.c_str(), str.length() * 2);
-		}
-
-		auto stringClass = loadAndInit("java/lang/String");
-		auto method = stringClass->getMethod("<init>::([C)V"); //调用 String类的构造函数
-
-		auto strObj = pJVM->getHeap()->alloc(stringClass);
-
-		std::vector<SoltData> arguments;
-		arguments.push_back(arr);
-
-		execute(strObj, method, arguments);
-
-		return strObj;
-	}
-
 	void JVMThread::checkClassInited(JVMClass * pClass)
 	{
+		if (isExceptionNow())
+			return;
+
 		JVMClass *pSuper = pClass->getSuperClass();
 		if (pSuper != nullptr)
 		{
@@ -153,32 +124,31 @@ namespace jvm
 
 		pClass->beginInit();
 
-		if (unsafeHackClass.find(*pClass->getName()) != unsafeHackClass.end())
+// 		if (pClass->getName()->compare("java/lang/reflect/Constructor") == 0)
+// 		{
+// 			printf("1\n");
+// 		}
+		
+		auto method = pClass->getDeclaredMethod("<clinit>::()V");
+		if (method != nullptr)
 		{
-			pClass->finishInit();
+			execute(nullptr, method);
 		}
-		else
-		{
-			auto method = pClass->getMethod("<clinit>::()V");
-			if (method != nullptr)
-			{
-				execute(nullptr, method, std::vector<SoltData>());
-			}
 
-			pClass->finishInit();
-		}
+		pClass->finishInit();
 	}
 
 	void JVMThread::initializeSystem()
 	{
 		loadAndInit("sun/misc/VM");
+		if (isExceptionNow())
+			return;
 
 		JVMClass *classPtr = loadAndInit("java/lang/System");
-
 		JVMClass *properties = loadAndInit("java/util/Properties");
 		JVMObject *pro = pJVM->getHeap()->alloc(properties);
 		Method *proInit = properties->getMethod("<init>::()V");
-		execute(pro, proInit, std::vector<SoltData>());
+		execute(pro, proInit);
 
 		classPtr->getStaticField("props")->setObjectValue(pro);
 		
@@ -188,9 +158,13 @@ namespace jvm
 
 		execute(nullptr, sysInitPro, args);
 
+//  		Method *method =classPtr->getMethod("initializeSystemClass::()V");
+//  		execute(nullptr, method);
+	}
 
-// 		Method *method =classPtr->getMethod("initializeSystemClass::()V");
-// 		execute(nullptr, method, std::vector<SoltData>());
+	JVMClass * JVMThread::justLoad(const char * className)
+	{
+		return pJVM->getClassLoader()->loadClass(className);
 	}
 
 	JVMClass * JVMThread::loadAndInit(const char* className)
@@ -200,24 +174,6 @@ namespace jvm
 		checkClassInited(ptr);
 
 		return ptr;
-	}
-
-	JVMArray * JVMThread::allocArray(JVMClass * classPtr, std::vector<int>& arrLens, int lenPos)
-	{
-		bool multi = (int)arrLens.size() > (lenPos + 1);
-
-		int arrLen = arrLens[lenPos];
-		JVMArray *pArr = pJVM->getHeap()->allocArray(classPtr, arrLen);
-		if (multi)
-		{
-			for (int i=0; i<arrLen; i++)
-			{
-				JVMArray** p = (JVMArray**)pArr->getAddress(i);
-				*p = allocArray(classPtr->getArrayEleClass(), arrLens, lenPos + 1);
-			}
-		}
-
-		return pArr;
 	}
 
 	JVMObject * JVMThread::getJavaThread()
@@ -231,7 +187,7 @@ namespace jvm
 			auto threadGroup = pJVM->getHeap()->alloc(threadGroupClass);
 
 			auto method = threadGroupClass->getMethod("<init>::()V");
-			execute(threadGroup, method, std::vector<SoltData>());
+			execute(threadGroup, method);
 
 			javaThread->getField("group")->setObjectValue(threadGroup);
 			javaThread->getField("priority")->setIntValue(9);
@@ -313,13 +269,13 @@ namespace jvm
 			parseMethodDescriptor(argSoltSizes, descPtr->c_str());
 			int soltCount = std::accumulate(argSoltSizes.begin(), argSoltSizes.end(), 0);
 
+			if (!method->isStatic())
+			{
+				soltCount += 1;
+			}
+
 			if (method->isNative())
 			{
-				if (!method->isStatic())
-				{
-					soltCount += 1;
-				}
-
 				if (soltCount > 0)
 				{
 					f->allocLocal(soltCount);
@@ -330,18 +286,12 @@ namespace jvm
 				f->allocLocal(method->getCode()->getMaxLocals());
 			}
 			
-			StackFrame *current = stacks.top();
+			StackFrame *current = currentFrame();
 			if (current != nullptr)
 			{
 				if (!argSoltSizes.empty())
 				{
 					int p = soltCount - 1;
-
-					if (!method->isStatic())
-					{
-						p += 1;
-					}
-
 					for (int i = argSoltSizes.size() - 1; i >= 0; i--)
 					{
 						int l = argSoltSizes[i];
@@ -364,25 +314,25 @@ namespace jvm
 			}
 		}
 
-		stacks.push(f);
+		stacks.push_back(f);
 
 		return f;
 	}
 
 	void JVMThread::popFrame()
 	{
-		auto ptr = stacks.top();
-		stacks.pop();
+		auto ptr = currentFrame();
+		stacks.pop_back();
 
 		delete ptr;
 	}
 
 	void JVMThread::popFrame(std::function<void(StackFrame*, StackFrame*)> callback)
 	{
-		auto ptr = stacks.top();
-		stacks.pop();
+		auto ptr = currentFrame();
+		stacks.pop_back();
 
-		callback(ptr, stacks.top());
+		callback(ptr, currentFrame());
 
 		delete ptr;
 	}
@@ -390,6 +340,74 @@ namespace jvm
 	JVMThread * JVMThread::current()
 	{
 		return pThread;
+	}
+
+	JVMObject* JVMObjectCreator::allocString(const std::string & str)
+	{
+		HeapMemory *heap = HeapMemory::getHeap();
+		auto strObj = heap->getString(str.c_str());
+		if (strObj != nullptr)
+			return strObj;
+
+		auto arr = heap->allocArray(JVMThread::current()->loadAndInit("[C"), str.length()); //char[]
+
+		if (str.length() > 0)
+		{
+			UTF8StringToUTF16(arr, str);
+		}
+
+		strObj = allocString(arr);
+		heap->addString(str.c_str(), strObj);
+
+		return strObj;
+	}
+
+	JVMObject* JVMObjectCreator::allocString(const std::wstring & str)
+	{
+		auto arr = HeapMemory::getHeap()->allocArray(JVMThread::current()->loadAndInit("[C"), str.length()); //char[]
+
+		if (str.length() > 0)
+		{
+			auto ptr = arr->getAddress(0);
+			memcpy(ptr, str.c_str(), str.length() * 2);
+		}
+
+		return allocString(arr);
+	}
+
+	JVMObject * JVMObjectCreator::allocString(JVMArray * charArr)
+	{
+		JVMThread *thread = JVMThread::current();
+
+		auto stringClass = thread->loadAndInit("java/lang/String");
+		auto method = stringClass->getMethod("<init>::([C)V");
+
+		auto strObj = HeapMemory::getHeap()->alloc(stringClass);
+
+		std::vector<SoltData> arguments;
+		arguments.push_back(charArr);
+
+		thread->execute(strObj, method, arguments);
+
+		return strObj;
+	}
+
+	JVMArray * JVMObjectCreator::allocArray(JVMClass * classPtr, std::vector<int>& arrLens, int lenPos)
+	{
+		bool multi = (int)arrLens.size() > (lenPos + 1);
+
+		int arrLen = arrLens[lenPos];
+		JVMArray *pArr = HeapMemory::getHeap()->allocArray(classPtr, arrLen);
+		if (multi)
+		{
+			for (int i = 0; i < arrLen; i++)
+			{
+				JVMArray** p = (JVMArray**)pArr->getAddress(i);
+				*p = allocArray(classPtr->getArrayEleClass(), arrLens, lenPos + 1);
+			}
+		}
+
+		return pArr;
 	}
 }
 

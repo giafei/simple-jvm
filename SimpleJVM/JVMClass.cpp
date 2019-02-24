@@ -4,6 +4,7 @@
 #include "ClassLoader.h"
 #include "JVMObject.h"
 #include "JVMThread.h"
+#include "HeapMemory.h"
 
 namespace jvm
 {
@@ -29,13 +30,17 @@ namespace jvm
 		return std::dynamic_pointer_cast<const ClassFile::CodeAttribute>(attributes["Code"]);
 	}
 
+	std::shared_ptr<const ClassFile::ExceptionAttribute> Method::getException()
+	{
+		return std::dynamic_pointer_cast<const ClassFile::ExceptionAttribute>(attributes["Exceptions"]);
+	}
+
 	JVMClass::JVMClass(const ClassFile::ClassFileData *t, ClassLoader* classLoader)
 	{
 		this->classLoader = classLoader;
 
 		inited = false;
 		initStarted = false;
-		classFieldsCount = 0;
 
 		arrayEleClass = nullptr;
 
@@ -44,23 +49,6 @@ namespace jvm
 		accessFlags = t->getAccessFlags();
 
 		initConstantPool(t);
-
-		auto fileds = t->getFields();
-		for (auto it = fileds.begin(); it != fileds.end(); it++)
-		{
-			auto field = *it;
-			Field *p = new Field(field, this);
-
-			this->fields[*(p->getName())] = p;
-		}
-
-		auto methods = t->getMethods();
-		for (auto it = methods.begin(); it != methods.end(); it++)
-		{
-			auto m = *it;
-			Method *p = new Method(m, this);
-			this->methods[p->getKey()] = p;
-		}
 
 		auto super = t->getSuperClass();
 		if (super)
@@ -73,6 +61,33 @@ namespace jvm
 			superClass = nullptr;
 		}
 
+		auto fileds = t->getFields();
+		for (auto it = fileds.begin(); it != fileds.end(); it++)
+		{
+			auto field = *it;
+			Field *p = new Field(field, this);
+
+			addField(p); //先增加自己的，再增加父类的
+		}
+
+		if (superClass != nullptr)
+		{
+			std::map<int, Field *>& superFields = superClass->fields;
+			for (auto it=superFields.begin(); it != superFields.end(); it++)
+			{
+				addField(it->second);
+			}
+		}
+
+		auto methods = t->getMethods();
+		for (auto it = methods.begin(); it != methods.end(); it++)
+		{
+			auto m = *it;
+			Method *p = new Method(m, this);
+			p->setSlot(nextMethodIndex++);
+			this->methods[p->getKey()] = p;
+		}
+
 		auto arr = t->getInterfaces();
 		interfaces.reserve(arr.size());
 		for (auto it = arr.begin(); it != arr.end(); it++)
@@ -82,10 +97,11 @@ namespace jvm
 		}
 	}
 
+	int JVMClass::fieldNoPos = 0;
+
 	JVMClass::JVMClass(ClassLoader * classLoader)
 	{
 		this->classLoader = classLoader;
-		classFieldsCount = 0;
 
 		inited = false;
 		initStarted = false;
@@ -98,11 +114,34 @@ namespace jvm
 		//TODO
 	}
 
-	JVMObject * JVMClass::getJavaClass()
+	void JVMClass::addField(Field * field)
+	{
+		const std::string& name = *(field->getName());
+		if (fieldIndexs.find(name) != fieldIndexs.end())
+			return;
+
+		int i = nextFieldIndex++;
+		fieldIndexs[name] = i;
+		fields[i] = field;
+	}
+
+	Field * JVMClass::getField(const std::string & name)
+	{
+		auto it = fieldIndexs.find(name);
+		if (it == fieldIndexs.end())
+			return nullptr;
+
+		int i = it->second;
+		return fields[i];
+	}
+
+	JVMObject * JVMClass::getJavaClassObject()
 	{
 		if (javaClass == nullptr)
 		{
-			javaClass = new JVMObject(classLoader->loadClass("java/lang/Class"));
+			auto heap = HeapMemory::getHeap();
+
+			javaClass = heap->allocClassObject(classLoader->loadClass("java/lang/Class"), this);
 
 			std::string className = *name;
 			char *p = (char*)className.c_str();
@@ -116,9 +155,8 @@ namespace jvm
 				p++;
 			}
 
-			auto classNameStr = JVMThread::current()->allocString(className);
+			auto classNameStr = JVMObjectCreator::allocString(className);
 			javaClass->getField("name")->setObjectValue(classNameStr);
-			//javaClass->getField("classLoader")->setSolt(0, classLoader->getJavaObject());
 		}
 
 		return javaClass;
@@ -128,24 +166,6 @@ namespace jvm
 	{
 		initStarted = false;
 		inited = true;
-
-		for (auto it = fields.begin(); it != fields.end(); it++)
-		{
-			if (it->second->isStatic())
-			{
-				classFieldsCount++;
-			}
-			else
-			{
-				auto descriptor = it->second->getDescriptor();
-				staticField[*(it->second->getName())] = JavaValue::fromFieldDescriptor(*descriptor);
-			}
-		}
-
-		if (superClass != nullptr)
-		{
-			classFieldsCount += superClass->getClassFieldsCount();
-		}
 	}
 
 	void JVMClass::initConstantPool(const ClassFile::ClassFileData * t)

@@ -29,6 +29,27 @@
     <Filter Include="jvm">
       <UniqueIdentifier>{bda0a24e-e65f-4f55-bc9e-41a54797f684}</UniqueIdentifier>
     </Filter>
+    <Filter Include="jvm\native">
+      <UniqueIdentifier>{ffdc9a34-9d48-436a-949d-8fa9be6b4132}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jvm\native\unsafe">
+      <UniqueIdentifier>{693521ea-62da-4845-bf4c-f13432a2c5d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jvm\native\reflect">
+      <UniqueIdentifier>{7b1ba514-28d6-4243-b8f3-c879786cbd51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jvm\native\io">
+      <UniqueIdentifier>{5d6abff5-4d06-44f4-8e4a-ebedd0f81339}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jvm\native\reflect\object">
+      <UniqueIdentifier>{271db981-ec80-42be-a312-b217a33a0c6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jvm\native\reflect\class">
+      <UniqueIdentifier>{6678df2e-6321-475a-9e68-a314a77148ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="jvm\native\system">
+      <UniqueIdentifier>{1156dd26-a85b-4ee7-97f0-30b841e20cef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -77,7 +98,7 @@
       <Filter>jvm</Filter>
     </ClInclude>
     <ClInclude Include="NativeMethodHandler.h">
-      <Filter>jvm</Filter>
+      <Filter>jvm\native</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -120,8 +141,47 @@
     <ClCompile Include="jvmOpCode.cpp">
       <Filter>jvm</Filter>
     </ClCompile>
+    <ClCompile Include="string_helper.cpp">
+      <Filter>base\cpp</Filter>
+    </ClCompile>
     <ClCompile Include="NativeMethodHandler.cpp">
-      <Filter>jvm</Filter>
+      <Filter>jvm\native</Filter>
+    </ClCompile>
+    <ClCompile Include="number_native.cpp">
+      <Filter>jvm\native\system</Filter>
+    </ClCompile>
+    <ClCompile Include="object_native.cpp">
+      <Filter>jvm\native\reflect\object</Filter>
+    </ClCompile>
+    <ClCompile Include="class_native.cpp">
+      <Filter>jvm\native\reflect\class</Filter>
+    </ClCompile>
+    <ClCompile Include="system_native.cpp">
+      <Filter>jvm\native\system</Filter>
+    </ClCompile>
+    <ClCompile Include="vm_native.cpp">
+      <Filter>jvm\native\system</Filter>
+    </ClCompile>
+    <ClCompile Include="unsafe_native.cpp">
+      <Filter>jvm\native\unsafe</Filter>
+    </ClCompile>
+    <ClCompile Include="file_native.cpp">
+      <Filter>jvm\native\io</Filter>
+    </ClCompile>
+    <ClCompile Include="stream_native.cpp">
+      <Filter>jvm\native\io</Filter>
+    </ClCompile>
+    <ClCompile Include="security_native.cpp">
+      <Filter>jvm\native\system</Filter>
+    </ClCompile>
+    <ClCompile Include="thread_native.cpp">
+      <Filter>jvm\native\system</Filter>
+    </ClCompile>
+    <ClCompile Include="string_native.cpp">
+      <Filter>jvm\native\system</Filter>
+    </ClCompile>
+    <ClCompile Include="throwable_native.cpp">
+      <Filter>jvm\native\system</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

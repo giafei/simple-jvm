@@ -172,7 +172,9 @@
     <ClCompile Include="ClassLoader.cpp" />
     <ClCompile Include="ClassPath.cpp" />
     <ClCompile Include="ClassReader.cpp" />
+    <ClCompile Include="class_native.cpp" />
     <ClCompile Include="DataReader.cpp" />
+    <ClCompile Include="file_native.cpp" />
     <ClCompile Include="HeapMemory.cpp" />
     <ClCompile Include="JVM.cpp" />
     <ClCompile Include="JVMClass.cpp" />
@@ -180,6 +182,9 @@
     <ClCompile Include="jvmOpCode.cpp" />
     <ClCompile Include="JVMThread.cpp" />
     <ClCompile Include="NativeMethodHandler.cpp" />
+    <ClCompile Include="number_native.cpp" />
+    <ClCompile Include="object_native.cpp" />
+    <ClCompile Include="security_native.cpp" />
     <ClCompile Include="SimpleJVM.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -187,6 +192,14 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="stream_native.cpp" />
+    <ClCompile Include="string_helper.cpp" />
+    <ClCompile Include="string_native.cpp" />
+    <ClCompile Include="system_native.cpp" />
+    <ClCompile Include="thread_native.cpp" />
+    <ClCompile Include="throwable_native.cpp" />
+    <ClCompile Include="unsafe_native.cpp" />
+    <ClCompile Include="vm_native.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
