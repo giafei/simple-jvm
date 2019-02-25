@@ -34,7 +34,6 @@ public class Test {
         e.printStackTrace(System.out);
     }
 
-
     public static void main(String[] args) throws Exception {
         Constructor<Test> constructor = Test.class.getDeclaredConstructor(String.class);
         Test t = constructor.newInstance("Hello World!");
@@ -48,10 +47,8 @@ public class Test {
         System.out.println(s1.get(t));
 
         System.out.println("√¸¡Ó––≤Œ ˝£∫");
-        for (String arg:args)
-        {
+        for (String arg:args) {
             System.out.println(arg);
         }
-
     }
 }

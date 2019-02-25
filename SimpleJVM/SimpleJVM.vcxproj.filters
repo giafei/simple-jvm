@@ -185,9 +185,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="java\test\Test.class">
-      <Filter>java\test</Filter>
-    </None>
     <None Include="java\test\Test.java">
       <Filter>java\test</Filter>
     </None>
