@@ -1,31 +1,57 @@
 package test;
 
-public class Test {
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
-    private long value = 0x123456789ABCDEFL;
+public class Test {
+    private int i;
+    private long l;
+    private double d;
+    private String s;
 
     static {
-        System.out.println("static Test");
+        System.out.print("静态构造函数：");
+        System.out.println(Test.class.toString());
     }
 
-    private void print(long v, String s) {
-        System.out.println(Long.toString(v));
-        System.out.println(s);
+    public Test()  {
     }
 
-    public static void main(String[] args) {
-        System.out.println("Hello World!");
-        System.out.println(Long.toString( new Test().value));
+    public Test(String x) {
+        s = x;
+    }
 
-        new Test().print(0xFEDCBA987654321L, "abdc");
+    public void v2(int v) {
+        this.i = v;
+    }
 
-        System.out.println(0.5);
+    public void displayV2() {
+        System.out.println("displayV2:" + s);
 
+        System.out.println("异常堆栈");
+        Exception e = new Exception("xx");
+        e.printStackTrace(System.out);
+    }
+
+
+    public static void main(String[] args) throws Exception {
+        Constructor<Test> constructor = Test.class.getDeclaredConstructor(String.class);
+        Test t = constructor.newInstance("Hello World!");
+
+        System.out.println("通过反射调用函数");
+        Method method = Test.class.getDeclaredMethod("displayV2");
+        method.invoke(t);
+
+        System.out.print("通过反射获取字段值：");
+        Field s1 = Test.class.getDeclaredField("s");
+        System.out.println(s1.get(t));
+
+        System.out.println("命令行参数：");
         for (String arg:args)
         {
             System.out.println(arg);
         }
 
-        System.out.println(Test.class.toString());
     }
 }

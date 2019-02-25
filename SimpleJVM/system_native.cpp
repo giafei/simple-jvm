@@ -82,7 +82,6 @@ namespace native
 			setProperty(th, props, "user.name", "giafei");
 			setProperty(th, props, "user.home", "f:\\tmp\\home");
 			setProperty(th, props, "user.dir", buf);
-			setProperty(th, props, "sun.stdout.encoding", "GBK");
 			setProperty(th, props, "sun.jnu.encoding", "GBK");
 			setProperty(th, props, "user.language", "zh");
 			setProperty(th, props, "user.script", "");
@@ -140,6 +139,30 @@ namespace native
 			f2->pushLong(f1->getLocalLong(0));
 		}
 
+		void setSystemIn(StackFrame* f1, StackFrame* f2)
+		{
+			auto classPtr = f1->getMethod()->getOwnerClass();
+			classPtr->getStaticField("in")->setObjectValue(f1->getLocalObject(0));
+		}
+
+		void setSystemOut(StackFrame* f1, StackFrame* f2)
+		{
+			auto classPtr = f1->getMethod()->getOwnerClass();
+			classPtr->getStaticField("out")->setObjectValue(f1->getLocalObject(0));
+		}
+
+		void setSystemErr(StackFrame* f1, StackFrame* f2)
+		{
+			auto classPtr = f1->getMethod()->getOwnerClass();
+			classPtr->getStaticField("err")->setObjectValue(f1->getLocalObject(0));
+		}
+
+		void identityHashCode(StackFrame* f1, StackFrame* f2)
+		{
+			auto objectPtr = f1->getLocalObject(0);
+			f2->pushInt((int32)objectPtr);
+		}
+
 		static class _
 		{
 		public:
@@ -152,9 +175,11 @@ namespace native
 
 				NativeMethodHandler::registerNative("java/lang/Runtime", "availableProcessors", availableProcessors);
 
-				NativeMethodHandler::registerEmptyNative("java/lang/System", "setIn0");
-				NativeMethodHandler::registerEmptyNative("java/lang/System", "setOut0");
-				NativeMethodHandler::registerEmptyNative("java/lang/System", "setErr0");
+				NativeMethodHandler::registerNative("java/lang/System", "setIn0", setSystemIn);
+				NativeMethodHandler::registerNative("java/lang/System", "setOut0", setSystemOut);
+				NativeMethodHandler::registerNative("java/lang/System", "setErr0", setSystemErr);
+
+				NativeMethodHandler::registerNative("java/lang/System", "identityHashCode", identityHashCode);
 
 				NativeMethodHandler::registerNative("java/lang/System", "mapLibraryName", mapLibraryName);
 				NativeMethodHandler::registerNative("java/lang/ClassLoader", "findBuiltinLib", findBuiltinLib);

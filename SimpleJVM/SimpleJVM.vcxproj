@@ -79,7 +79,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>F:\WorkDir\C++\third_party\zlib;F:\WorkDir\C++\third_party\zlib\contrib\minizip;$(IncludePath)</IncludePath>
+    <IncludePath>F:\WorkDir\C++\third_party\boost_1_69_0;F:\WorkDir\C++\third_party\zlib;F:\WorkDir\C++\third_party\zlib\contrib\minizip;$(IncludePath)</IncludePath>
     <LibraryPath>F:\WorkDir\C++\third_party\zlib\contrib\vstudio\vc14\x86\ZlibStatRelease;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -130,6 +130,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

@@ -7,7 +7,6 @@
 #include "HeapMemory.h"
 #include "DataBlock.h"
 #include "JVMObject.h"
-#include <boost/algorithm/string.hpp>
 #include "NativeMethodHandler.h"
 
 namespace jvm

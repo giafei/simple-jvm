@@ -1526,25 +1526,6 @@ namespace jvm
 				auto objPtr = f->getObjectAt(argSoltcount);
 				if (objPtr == nullptr)
 				{
-// 					if (methodName == "println::(Ljava/lang/String;)V")
-// 					{
-// 						//hack println 看效果
-// 						auto charArr = dynamic_cast<JVMArray*>(f->popObject()->getField("value")->getObjectValue());
-// 
-// 						std::wstring str((wchar_t*)(charArr->getAddress(0)), charArr->getLength());
-// 						wprintf(L"%s\n", str.c_str());
-// 						f->popObject();
-// 						break;
-// 					}
-// 					if (methodName == "println::(D)V")
-// 					{
-// 						//hack println 看效果
-// 						double v = f->popDouble();
-// 						f->popObject();
-// 						wprintf(L"%f\n", v);
-// 						break;
-// 					}
-
 					throw new std::exception("NullPointerException");
 				}
 
@@ -1553,6 +1534,23 @@ namespace jvm
 				{
 					throw new std::exception("Method NullPointerException");
 				}
+
+				//hack println 看效果
+// 				if (methodName == "println::(Ljava/lang/String;)V")
+// 				{
+// 					auto objPtr = f->getObjectAt(0);
+// 					if (objPtr != nullptr)
+// 					{
+// 						auto charArr = dynamic_cast<JVMArray*>(objPtr->getField("value")->getObjectValue());
+// 
+// 						std::wstring str((wchar_t*)(charArr->getAddress(0)), charArr->getLength());
+// 						wprintf(L"%s\n", str.c_str());
+// 					}
+// 					else
+// 					{
+// 						wprintf(L"null\n");
+// 					}
+// 				}
 
 				auto nextFrame = pushFrame(method);
 
@@ -1944,7 +1942,7 @@ namespace jvm
 		{
 			//找到异常触发点
 			Method* method = stacks[i]->getMethod();
-			if (method->isNative() || (method->getName()->compare("<init>") == 0))
+			if (method->isNative() || (method->getName()->compare("<init>") == 0) || (method->getName()->compare("fillInStackTrace") == 0))
 			{
 				i -= 1;
 			}
