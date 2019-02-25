@@ -19,7 +19,7 @@ namespace native
 
 			auto method = objPtr->getClass()->getMethod("run::()Ljava/lang/Object;");
 			auto rtnVal = th->execute(objPtr, method);
-			if (!th->isExceptionNow())
+			if (!th->isThreadEnd())
 			{
 				f2->pushJavaValue(rtnVal);
 			}

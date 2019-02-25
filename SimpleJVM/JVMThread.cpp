@@ -55,7 +55,7 @@ namespace jvm
 		pushFrame(method);
 
 		execute();
-		if (isExceptionNow())
+		if (isThreadEnd())
 		{
 			return std::shared_ptr<JavaValue>();
 		}
@@ -104,7 +104,7 @@ namespace jvm
 
 	void JVMThread::checkClassInited(JVMClass * pClass)
 	{
-		if (isExceptionNow())
+		if (isThreadEnd())
 			return;
 
 		JVMClass *pSuper = pClass->getSuperClass();
@@ -141,25 +141,26 @@ namespace jvm
 	void JVMThread::initializeSystem()
 	{
 		loadAndInit("sun/misc/VM");
-		if (isExceptionNow())
+		if (isThreadEnd())
 			return;
 
-		JVMClass *classPtr = loadAndInit("java/lang/System");
-		JVMClass *properties = loadAndInit("java/util/Properties");
-		JVMObject *pro = pJVM->getHeap()->alloc(properties);
-		Method *proInit = properties->getMethod("<init>::()V");
-		execute(pro, proInit);
+ 		JVMClass *classPtr = loadAndInit("java/lang/System");
 
-		classPtr->getStaticField("props")->setObjectValue(pro);
-		
-		Method *sysInitPro = classPtr->getMethod("initProperties::(Ljava/util/Properties;)Ljava/util/Properties;");
-		std::vector<SoltData> args;
-		args.push_back(pro);
+// 		JVMClass *properties = loadAndInit("java/util/Properties");
+// 		JVMObject *pro = pJVM->getHeap()->alloc(properties);
+// 		Method *proInit = properties->getMethod("<init>::()V");
+// 		execute(pro, proInit);
+// 
+// 		classPtr->getStaticField("props")->setObjectValue(pro);
+// 		
+// 		Method *sysInitPro = classPtr->getMethod("initProperties::(Ljava/util/Properties;)Ljava/util/Properties;");
+// 		std::vector<SoltData> args;
+// 		args.push_back(pro);
+// 
+// 		execute(nullptr, sysInitPro, args);
 
-		execute(nullptr, sysInitPro, args);
-
-//  		Method *method =classPtr->getMethod("initializeSystemClass::()V");
-//  		execute(nullptr, method);
+ 		Method *method = classPtr->getMethod("initializeSystemClass::()V");
+ 		execute(nullptr, method);
 	}
 
 	JVMClass * JVMThread::justLoad(const char * className)
@@ -349,14 +350,13 @@ namespace jvm
 		if (strObj != nullptr)
 			return strObj;
 
-		auto arr = heap->allocArray(JVMThread::current()->loadAndInit("[C"), str.length()); //char[]
-
+		std::wstring wstr;
 		if (str.length() > 0)
 		{
-			UTF8StringToUTF16(arr, str);
+			UTF8StringToUTF16(wstr, str);
 		}
 
-		strObj = allocString(arr);
+		strObj = allocString(wstr);
 		heap->addString(str.c_str(), strObj);
 
 		return strObj;

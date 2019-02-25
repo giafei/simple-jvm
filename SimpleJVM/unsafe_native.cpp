@@ -20,13 +20,8 @@ namespace native
 
 			if (descriptor[1] == 'J')
 			{
-				auto thisPtr = f1->getLocalObject(0);
 				int64 i = f1->getLocalLong(1);
-
-				char buf[128] = { 0 };
-				sprintf_s(buf, "v_%d", (int)i);
-
-				f2->pushInt(thisPtr->getNativeData<int>(std::string(buf)));
+				f2->pushInt(*(int32*)i);
 			}
 			else
 			{
@@ -44,13 +39,9 @@ namespace native
 
 			if (descriptor[1] == 'J')
 			{
-				auto thisPtr = f1->getLocalObject(0);
 				int64 i = f1->getLocalLong(1);
 				auto v = f1->getLocalInt(3);
-
-				char buf[128] = { 0 };
-				sprintf_s(buf, "v_%d", (int)i);
-				thisPtr->setNativeData(buf, v);
+				*(int32*)i = v;
 			}
 			else
 			{
@@ -62,19 +53,107 @@ namespace native
 			}
 		}
 
+		void getByte(StackFrame* f1, StackFrame* f2)
+		{
+			const char* descriptor = f1->getMethod()->getDescriptor()->c_str();
+
+			if (descriptor[1] == 'J')
+			{
+				int64 i = f1->getLocalLong(1);
+				f2->pushInt(*(int8*)i);
+			}
+			else
+			{
+				getInt(f1, f2);
+			}
+		}
+
+		void putByte(StackFrame* f1, StackFrame* f2)
+		{
+			const char* descriptor = f1->getMethod()->getDescriptor()->c_str();
+
+			if (descriptor[1] == 'J')
+			{
+				int64 i = f1->getLocalLong(1);
+				auto v = f1->getLocalInt(3);
+				*(int8*)i = (int8)v;
+			}
+			else
+			{
+				putInt(f1, f2);
+			}
+		}
+
+		void getShort(StackFrame* f1, StackFrame* f2)
+		{
+			const char* descriptor = f1->getMethod()->getDescriptor()->c_str();
+
+			if (descriptor[1] == 'J')
+			{
+				int64 i = f1->getLocalLong(1);
+				f2->pushInt(*(int16*)i);
+			}
+			else
+			{
+				getInt(f1, f2);
+			}
+		}
+
+		void putShort(StackFrame* f1, StackFrame* f2)
+		{
+			const char* descriptor = f1->getMethod()->getDescriptor()->c_str();
+
+			if (descriptor[1] == 'J')
+			{
+				int64 i = f1->getLocalLong(1);
+				auto v = f1->getLocalInt(3);
+				*(int16*)i = (int16)v;
+			}
+			else
+			{
+				putInt(f1, f2);
+			}
+		}
+
+		void getChar(StackFrame* f1, StackFrame* f2)
+		{
+			const char* descriptor = f1->getMethod()->getDescriptor()->c_str();
+
+			if (descriptor[1] == 'J')
+			{
+				int64 i = f1->getLocalLong(1);
+				f2->pushInt(*(wchar_t*)i);
+			}
+			else
+			{
+				getInt(f1, f2);
+			}
+		}
+
+		void putChar(StackFrame* f1, StackFrame* f2)
+		{
+			const char* descriptor = f1->getMethod()->getDescriptor()->c_str();
+
+			if (descriptor[1] == 'J')
+			{
+				int64 i = f1->getLocalLong(1);
+				auto v = f1->getLocalInt(3);
+				*(wchar_t*)i = (wchar_t)v;
+			}
+			else
+			{
+				putInt(f1, f2);
+			}
+		}
+
 		void getLong(StackFrame* f1, StackFrame* f2)
 		{
 			const char* descriptor = f1->getMethod()->getDescriptor()->c_str();
 
 			if (descriptor[1] == 'J')
 			{
-				auto thisPtr = f1->getLocalObject(0);
 				int64 i = f1->getLocalLong(1);
-
-				char buf[128] = { 0 };
-				sprintf_s(buf, "v_%d", (int)i);
-
-				f2->pushLong(thisPtr->getNativeData<int64>(std::string(buf)));
+				f2->pushLong(*(int64*)i);
 			}
 			else
 			{
@@ -92,13 +171,9 @@ namespace native
 
 			if (descriptor[1] == 'J')
 			{
-				auto thisPtr = f1->getLocalObject(0);
 				int64 i = f1->getLocalLong(1);
 				auto v = f1->getLocalLong(3);
-
-				char buf[128] = { 0 };
-				sprintf_s(buf, "v_%d", (int)i);
-				thisPtr->setNativeData(buf, v);
+				*(int64*)i = v;
 			}
 			else
 			{
@@ -133,8 +208,8 @@ namespace native
 		void setMemory(StackFrame* f1, StackFrame* f2)
 		{
 			int8 *p = (int8*)f1->getLocalLong(2);
-			int offset = (int)f1->getLocalInt(4);
-			p[offset] = (int8)f1->getLocalInt(6);
+			int size = (int)f1->getLocalInt(4);
+			memset(p, size, (int8)f1->getLocalInt(6));
 		}
 
 		void arrayBaseOffset(StackFrame* f1, StackFrame* f2)
@@ -231,6 +306,11 @@ namespace native
 			}
 		}
 
+		void VMSupportsCS8(StackFrame* f1, StackFrame* f2)
+		{
+			f2->pushInt(1);
+		}
+
 		static class _
 		{
 		public:
@@ -243,12 +323,12 @@ namespace native
 				NativeMethodHandler::registerNative("sun/misc/Unsafe", "putObject", putInt);
 				NativeMethodHandler::registerNative("sun/misc/Unsafe", "getBoolean", getInt);
 				NativeMethodHandler::registerNative("sun/misc/Unsafe", "putBoolean", putInt);
-				NativeMethodHandler::registerNative("sun/misc/Unsafe", "getByte", getInt);
-				NativeMethodHandler::registerNative("sun/misc/Unsafe", "putByte", putInt);
-				NativeMethodHandler::registerNative("sun/misc/Unsafe", "getShort", getInt);
-				NativeMethodHandler::registerNative("sun/misc/Unsafe", "putShort", putInt);
-				NativeMethodHandler::registerNative("sun/misc/Unsafe", "getChar", getInt);
-				NativeMethodHandler::registerNative("sun/misc/Unsafe", "putChar", putInt);
+				NativeMethodHandler::registerNative("sun/misc/Unsafe", "getByte", getByte);
+				NativeMethodHandler::registerNative("sun/misc/Unsafe", "putByte", putByte);
+				NativeMethodHandler::registerNative("sun/misc/Unsafe", "getShort", getShort);
+				NativeMethodHandler::registerNative("sun/misc/Unsafe", "putShort", putShort);
+				NativeMethodHandler::registerNative("sun/misc/Unsafe", "getChar", getChar);
+				NativeMethodHandler::registerNative("sun/misc/Unsafe", "putChar", putChar);
 				NativeMethodHandler::registerNative("sun/misc/Unsafe", "getLong", getLong);
 				NativeMethodHandler::registerNative("sun/misc/Unsafe", "putLong", putLong);
 				NativeMethodHandler::registerNative("sun/misc/Unsafe", "getFloat", getInt);
@@ -296,6 +376,7 @@ namespace native
 				NativeMethodHandler::registerNative("sun/misc/Unsafe", "getDoubleVolatile", getLong);
 				NativeMethodHandler::registerNative("sun/misc/Unsafe", "putDoubleVolatile", putLong);
 
+				NativeMethodHandler::registerNative("java/util/concurrent/atomic/AtomicLong", "VMSupportsCS8", VMSupportsCS8);
 			}
 		}_1;
 	}

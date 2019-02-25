@@ -63,6 +63,7 @@ namespace jvm
 
 		const uint8* codeData = nullptr;
 		int* pPC = nullptr;
+		bool wide = false;
 
 		auto prepare = [&]()
 		{
@@ -79,12 +80,16 @@ namespace jvm
 					codeData = method->getCode()->getCode()->getData();
 				}
 
-// 				if (method->getName()->compare("acquireConstructorAccessor") == 0)
+// 				if (method->getName()->compare("<init>") == 0)
 // 				{
-// 					printf("1\n");
+// 					if (method->getOwnerClass()->getName()->compare("java/nio/charset/CharsetDecoder") == 0)
+// 					{
+// 						printf("1\n");
+// 					}
 // 				}
 			}
 
+			wide = false;
 			pPC = f->getPC();
 		};
 
@@ -175,7 +180,7 @@ namespace jvm
 
 		while (method != nullptr)
 		{
-			if (isExceptionNow())
+			if (isThreadEnd())
 				return;
 
 			if (method->isNative())
@@ -272,7 +277,10 @@ namespace jvm
 					auto strPtr = pClass->getConstString(i);
 					auto p = pClass->getClassLoader()->loadClass(strPtr->c_str());
 					checkClassInited(p);
-					f->pushObject(p->getJavaClassObject());
+					if (!isThreadEnd())
+					{
+						f->pushObject(p->getJavaClassObject());
+					}
 					break;
 				}
 
@@ -307,31 +315,36 @@ namespace jvm
 
 			case 0x15: //iload
 			{
-				f->pushInt(f->getLocalInt(readUint8()));
+				f->pushInt(f->getLocalInt(wide? readUInt16(): readUint8()));
+				wide = false;
 				break;
 			}
 
 			case 0x16://lload
 			{
-				f->pushLong(f->getLocalLong(readUint8()));
+				f->pushLong(f->getLocalLong(wide ? readUInt16() : readUint8()));
+				wide = false;
 				break;
 			}
 
 			case 0x17://fload
 			{
-				f->pushFloat(f->getLocalFloat(readUint8()));
+				f->pushFloat(f->getLocalFloat(wide ? readUInt16() : readUint8()));
+				wide = false;
 				break;
 			}
 
 			case 0x18://dload
 			{
-				f->pushDouble(f->getLocalDouble(readUint8()));
+				f->pushDouble(f->getLocalDouble(wide ? readUInt16() : readUint8()));
+				wide = false;
 				break;
 			}
 
 			case 0x19://aload
 			{
-				f->pushObject(f->getLocalObject(readUint8()));
+				f->pushObject(f->getLocalObject(wide ? readUInt16() : readUint8()));
+				wide = false;
 				break;
 			}
 
@@ -453,31 +466,36 @@ namespace jvm
 
 			case 0x36: //istore
 			{
-				f->setLocalInt(readUint8(), f->popInt());
+				f->setLocalInt(wide ? readUInt16() : readUint8(), f->popInt());
+				wide = false;
 				break;
 			}
 
 			case 0x37: //lstore
 			{
-				f->setLocalLong(readUint8(), f->popLong());
+				f->setLocalLong(wide ? readUInt16() : readUint8(), f->popLong());
+				wide = false;
 				break;
 			}
 
 			case 0x38: //fstore
 			{
-				f->setLocalFloat(readUint8(), f->popFloat());
+				f->setLocalFloat(wide ? readUInt16() : readUint8(), f->popFloat());
+				wide = false;
 				break;
 			}
 
 			case 0x39: //dstore
 			{
-				f->setLocalDouble(readUint8(), f->popDouble());
+				f->setLocalDouble(wide ? readUInt16() : readUint8(), f->popDouble());
+				wide = false;
 				break;
 			}
 
 			case 0x3A: //astore
 			{
-				f->setLocalObject(readUint8(), f->popObject());
+				f->setLocalObject(wide ? readUInt16() : readUint8(), f->popObject());
+				wide = false;
 				break;
 			}
 
@@ -941,9 +959,10 @@ namespace jvm
 
 			case 0x84: //iinc
 			{
-				int i = readUint8();
+				int i = wide ? readUInt16() : readUint8();
 				int v = readInt8();
 				f->setLocalInt(i, f->getLocalInt(i) + v);
+				wide = false;
 				break;
 			}
 
@@ -1305,7 +1324,8 @@ namespace jvm
 
 			case 0xA9: //ret
 			{
-				*pPC = f->getLocalInt(readUint8());
+				*pPC = f->getLocalInt(wide ? readUInt16() : readUint8());
+				wide = false;
 				break;
 			}
 
@@ -1431,10 +1451,14 @@ namespace jvm
 			{
 				auto fieldRef = pClass->getConstant<ConstantMemberRef>(readUInt16());
 				auto classPtr = loadAndInit(fieldRef->getClassName()->c_str());
-				auto nameType = fieldRef->getNameAndType();
-				auto fieldValue = classPtr->getStaticField(*(nameType->getName()));
 
-				f->pushJavaValue(fieldValue);
+				if (!isThreadEnd())
+				{
+					auto nameType = fieldRef->getNameAndType();
+					auto fieldValue = classPtr->getStaticField(*(nameType->getName()));
+
+					f->pushJavaValue(fieldValue);
+				}
 				break;
 			}
 
@@ -1442,10 +1466,14 @@ namespace jvm
 			{
 				auto fieldRef = pClass->getConstant<ConstantMemberRef>(readUInt16());
 				auto classPtr = loadAndInit(fieldRef->getClassName()->c_str());
-				auto nameType = fieldRef->getNameAndType();
-				auto fieldValue = classPtr->getStaticField(*(nameType->getName()));
 
-				f->popToJavaValue(fieldValue);
+				if (!isThreadEnd())
+				{
+					auto nameType = fieldRef->getNameAndType();
+					auto fieldValue = classPtr->getStaticField(*(nameType->getName()));
+
+					f->popToJavaValue(fieldValue);
+				}
 				break;
 			}
 
@@ -1498,24 +1526,24 @@ namespace jvm
 				auto objPtr = f->getObjectAt(argSoltcount);
 				if (objPtr == nullptr)
 				{
-					if (methodName == "println::(Ljava/lang/String;)V")
-					{
-						//hack println 看效果
-						auto charArr = dynamic_cast<JVMArray*>(f->popObject()->getField("value")->getObjectValue());
-
-						std::wstring str((wchar_t*)(charArr->getAddress(0)), charArr->getLength());
-						wprintf(L"%s\n", str.c_str());
-						f->popObject();
-						break;
-					}
-					if (methodName == "println::(D)V")
-					{
-						//hack println 看效果
-						double v = f->popDouble();
-						f->popObject();
-						wprintf(L"%f\n", v);
-						break;
-					}
+// 					if (methodName == "println::(Ljava/lang/String;)V")
+// 					{
+// 						//hack println 看效果
+// 						auto charArr = dynamic_cast<JVMArray*>(f->popObject()->getField("value")->getObjectValue());
+// 
+// 						std::wstring str((wchar_t*)(charArr->getAddress(0)), charArr->getLength());
+// 						wprintf(L"%s\n", str.c_str());
+// 						f->popObject();
+// 						break;
+// 					}
+// 					if (methodName == "println::(D)V")
+// 					{
+// 						//hack println 看效果
+// 						double v = f->popDouble();
+// 						f->popObject();
+// 						wprintf(L"%f\n", v);
+// 						break;
+// 					}
 
 					throw new std::exception("NullPointerException");
 				}
@@ -1539,15 +1567,19 @@ namespace jvm
 				auto methodRef = pClass->getConstant<ConstantMemberRef>(readUInt16());
 				auto methodName(methodKey(methodRef->getNameAndType()));
 				auto classPtr = loadAndInit(methodRef->getClassName()->c_str());
-				auto method = classPtr->getMethod(methodName);
-				if (method == nullptr)
+
+				if (!isThreadEnd())
 				{
-					throw new std::exception("Method NullPointerException");
+					auto method = classPtr->getMethod(methodName);
+					if (method == nullptr)
+					{
+						throw new std::exception("Method NullPointerException");
+					}
+
+					pushFrame(method);
+
+					prepare();
 				}
-
-				pushFrame(method);
-
-				prepare();
 				break;
 			}
 
@@ -1587,7 +1619,11 @@ namespace jvm
 			{
 				auto classRef = pClass->getConstant<ConstantClassInfo>(readUInt16());
 				auto classPtr = loadAndInit(classRef->getData()->c_str());
-				f->pushObject(heap->alloc(classPtr));
+
+				if (!isThreadEnd())
+				{
+					f->pushObject(heap->alloc(classPtr));
+				}
 				break;
 			}
 
@@ -1641,11 +1677,20 @@ namespace jvm
 			{
 				auto classRef = pClass->getConstant<ConstantClassInfo>(readUInt16());
 				auto classPtr = loadAndInit(classRef->getData()->c_str());
+				if (isThreadEnd())
+				{
+					break;
+				}
 
 				std::string arrClassName("[");
 				arrClassName.append(*(classPtr->getName()));
 
 				auto arrClassPtr = loadAndInit(arrClassName.c_str());
+				if (isThreadEnd())
+				{
+					break;
+				}
+
 				f->pushObject(heap->allocArray(arrClassPtr, f->popInt()));
 				break;
 			}
@@ -1667,6 +1712,8 @@ namespace jvm
 			{
 				auto exPtr = f->popObject();
 				dispathException(exPtr);
+				if (!isThreadEnd())
+					prepare();
 				break;
 			}
 
@@ -1678,6 +1725,11 @@ namespace jvm
 				{
 					auto classRef = pClass->getConstant<ConstantClassInfo>(i);
 					auto classPtr = loadAndInit(classRef->getData()->c_str());
+
+					if (isThreadEnd())
+					{
+						break;
+					}
 
 					if (!objInstanceOf(objPtr, classPtr))
 					{
@@ -1696,6 +1748,11 @@ namespace jvm
 				{
 					auto classRef = pClass->getConstant<ConstantClassInfo>(i);
 					auto classPtr = loadAndInit(classRef->getData()->c_str());
+
+					if (isThreadEnd())
+					{
+						break;
+					}
 
 					if (objInstanceOf(objPtr, classPtr))
 					{
@@ -1719,15 +1776,21 @@ namespace jvm
 			case 0xC3: //monitorenter
 				f->popObject();
 				break; //单线程
-			case 0xC4: //widt
+			case 0xC4: //wide
 			{
-				throw new std::exception("不支持的指令");
+				wide = true;
+				break;
 			}
 
 			case 0xC5: //multianewarray
 			{
 				auto classRef = pClass->getConstant<ConstantClassInfo>(readUInt16());
 				auto classPtr = loadAndInit(classRef->getData()->c_str());
+
+				if (isThreadEnd())
+				{
+					break;
+				}
 
 				int w = readUint8();
 				std::vector<int> arrLens;

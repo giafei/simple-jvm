@@ -61,6 +61,8 @@ namespace native
 
 				NativeMethodHandler::registerNative("java/lang/Object", "clone", cloneObject);
 				NativeMethodHandler::registerNative("java/lang/Object", "getClass", getObjectClass);
+
+				NativeMethodHandler::registerEmptyNative("java/lang/Object", "notifyAll");
 			}
 		}_1;
 	}

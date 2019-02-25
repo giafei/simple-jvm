@@ -270,10 +270,6 @@ namespace jvm
 		void dispathException(JVMObject *ex);
 		void dispathException(JVMClass* exClass);
 		JVMArray* fillStackTrace(JVMObject *ex, int dummy, bool fromNative);
-		bool isExceptionNow()
-		{
-			return unhandledException != nullptr;
-		}
 
 		void setUnHandledException(JVMObject* e)
 		{
@@ -283,6 +279,17 @@ namespace jvm
 		JVMObject* getUnHandledException()
 		{
 			return unhandledException;
+		}
+
+	public:
+		bool isThreadEnd()
+		{
+			return threadIsEnd || (unhandledException != nullptr);
+		}
+
+		void setThreadEnd(bool v)
+		{
+			threadIsEnd = v;
 		}
 
 	public:
@@ -311,11 +318,25 @@ namespace jvm
 		void popFrame();
 		void popFrame(std::function<void(StackFrame*, StackFrame*)> callback);
 
+		StackFrame* getFrame(int i)
+		{
+			if (i < 0)
+			{
+				i = 0;
+			}
+
+			if (i >= (int)stacks.size())
+				return nullptr;
+
+			return stacks[stacks.size() - i - 1];
+		}
+
 	public:
 		static JVMThread* current();
 
 	protected:
 		JVMObject *unhandledException;
+		bool threadIsEnd = false;
 
 		std::vector<StackFrame*> stacks;
 		JVM *pJVM;

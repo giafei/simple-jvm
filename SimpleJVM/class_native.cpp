@@ -50,9 +50,28 @@ namespace native
 			}
 		}
 
-		void getCallerClass(StackFrame* f1, StackFrame* f2)
+		void getCallerClass(JVM* vm, JVMThread* th)
 		{
-			f2->pushObject(f2->getMethod()->getOwnerClass()->getJavaClassObject());
+			int i = 0;
+			StackFrame* f1 = th->currentFrame();
+			const char* descriptor = f1->getMethod()->getDescriptor()->c_str();
+			if (descriptor[1] == ')')
+			{
+				i = 2;
+			}
+			else
+			{
+				i = f1->getLocalInt(0);
+			}
+
+			StackFrame* t = th->getFrame(i);
+			while (t->getMethod() == nullptr)
+			{
+				t = th->getFrame(++i);
+			}
+
+			th->popFrame();
+			th->currentFrame()->pushObject(t->getMethod()->getOwnerClass()->getJavaClassObject());
 		}
 
 		void getClassName0(StackFrame* f1, StackFrame* f2)
@@ -433,11 +452,16 @@ namespace native
 
 		void connvertArgArray(std::vector<SoltData>& arr, JVMArray* objArr)
 		{
-			int n = objArr->getLength();
-			arr.resize(n);
-			for (int i = 0; i < n; i++)
+			arr.clear();
+
+			if (objArr != nullptr)
 			{
-				arr[i] = *(objArr->geElementAddress<JVMObject*>(i));
+				int n = objArr->getLength();
+				arr.resize(n);
+				for (int i = 0; i < n; i++)
+				{
+					arr[i] = *(objArr->geElementAddress<JVMObject*>(i));
+				}
 			}
 		}
 
@@ -460,7 +484,7 @@ namespace native
 
 					th->execute(objPtr, method, args);
 
-					if (!th->isExceptionNow())
+					if (!th->isThreadEnd())
 					{
 						f2->pushObject(objPtr);
 					}
@@ -490,7 +514,7 @@ namespace native
 
 					auto rtnValue = th->execute(objPtr, method, args);
 
-					if (!th->isExceptionNow())
+					if (!th->isThreadEnd())
 					{
 						f2->pushJavaValue(rtnValue);
 					}
