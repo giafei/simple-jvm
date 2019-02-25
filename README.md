@@ -1,6 +1,6 @@
 # 简易JVM
 
-目前只是单线程， 未支持 ClassLoader。
+目前只是单线程， 未支持 ClassLoader，没有实现堆的内存管理功能。
 
 ```JAVA
 public class Test {
@@ -46,8 +46,7 @@ public class Test {
         System.out.println(s1.get(t));
 
         System.out.println("命令行参数：");
-        for (String arg:args)
-        {
+        for (String arg:args) {
             System.out.println(arg);
         }
     }
