@@ -1887,6 +1887,7 @@ namespace jvm
 					int pc = *(frame->getPC())  - 1;
 					auto exTable = method->getCode()->getExceptions();
 
+					int preTablePC = -1, handlerPC = 0;
 					for (auto it = exTable.begin(); it != exTable.end(); it++)
 					{
 						ClassFile::CodeExceptionTableData&  data = *it;
@@ -1895,8 +1896,10 @@ namespace jvm
 							continue;
 						}
 
-						bool canCatch = false;
+						if (data.startPC <= preTablePC)
+							continue;
 
+						bool canCatch = false;
 						if (data.catchType == 0) //catch all
 						{
 							canCatch = true;
@@ -1914,11 +1917,17 @@ namespace jvm
 
 						if (canCatch)
 						{
-							frame->clearStack();
-							frame->pushObject(ex);
-							*frame->getPC() = data.handlerPC;
-							return;
+							preTablePC = data.startPC;
+							handlerPC = data.handlerPC;
 						}
+					}
+				
+					if (handlerPC != 0)
+					{
+						frame->clearStack();
+						frame->pushObject(ex);
+						*frame->getPC() = handlerPC;
+						return;
 					}
 				}
 
